@@ -3601,9 +3601,10 @@ function renderEnchant(){
   const d=PLANTS[id];const evo=(SAVE.evo&&SAVE.evo[id])||0;
   const cost=Math.round((20+d.rar*30)+(evo?evo*25:0));
   const card=document.createElement("div");card.className="enCard";
-  card.innerHTML=`<div style="font-size:32px">${makeIcon(id,80)}</div><b>${d.name}</b><span style="color:var(--dim);font-size:12px">Lv ${SAVE.plants[id].lv||1} · Evo ${evo}</span><div class="pillEvo">✦ ${cost} shards</div>
+card.innerHTML=`<div class="enIconSlot" style="font-size:32px"></div><b>${d.name}</b><span style="color:var(--dim);font-size:12px">Lv ${SAVE.plants[id].lv||1} · Evo ${evo}</span><div class="pillEvo">✦ ${cost} shards</div>
   <button class="btn gold small" ${((SAVE.shards||0)<cost||!sept26Unlocks())?"disabled":""} onclick="doEvolve('${id}',${cost})">Evolve</button>
   <div style="font-size:11px;color:#9fe08f">+35% all stats · resets to Lv 1</div>`;
+  const _slot=card.querySelector(".enIconSlot");if(_slot)_slot.appendChild(makeIcon(id,80));
   grid.appendChild(card);
  });
 }
@@ -4241,10 +4242,11 @@ function doEvolve(id,cost){
    for(var i=0;i<4;i++)pips+='<span class="'+(i<evo?"on":"off")+'">\u2726</span>';
    pips+='</div>';
    var form=evo>0?'<div class="enForm">\u2726 EVOLVED FORM</div>':'<div style="font-size:10px;color:var(--dim);letter-spacing:1px">no evolution yet</div>';
-   card.innerHTML='<div style="font-size:32px;line-height:0">'+makeIcon(id,88)+'</div><b>'+d.name+'</b>'
+card.innerHTML='<div class="enIconSlot" style="font-size:32px;line-height:0"></div><b>'+d.name+'</b>'
     +'<span style="color:var(--dim);font-size:12px">Lv '+((SAVE.plants[id]&&SAVE.plants[id].lv)||1)+'</span>'+pips+'<span class="pillEvo">\u2726 '+cost+'</span>'+form
     +'<button class="btn small '+(evo>0?"gold":"")+'" '+(((SAVE.shards||0)<cost||!sept26Unlocks())?"disabled":"")+' onclick="doEvolve(\''+id+'\','+cost+')">'+(evo>0?"Evolve Again":"Evolve")+'</button>'
     +'<div style="font-size:10px;color:#9fe08f">+35% power per rank \u00b7 resets to Lv 1</div>';
+   var _slot=card.querySelector(".enIconSlot");if(_slot)_slot.appendChild(makeIcon(id,88));
    grid.appendChild(card);
   });
  };
