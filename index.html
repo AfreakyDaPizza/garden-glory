@@ -476,6 +476,41 @@ input[type=text]:focus{border-color:var(--brd2);box-shadow:0 0 0 3px #4da06a33,i
 .scientist.ready{border-color:#8bff6e;box-shadow:0 0 18px #8bff6e66}
 #advisorHub .bub{background:linear-gradient(165deg,#1e3a2b,#14281d);border:1px solid var(--brd);border-radius:16px;box-shadow:0 10px 26px #000b,inset 0 1px 0 #9ff3be2a}
 .wlModal .wlTitle{text-shadow:0 0 30px #ffd86b66}
+/* ===== OCT3: ZEN EVENT (VAULT CODE UNLOCK) + ENCHANTER ZEN SECTION REDESIGN ===== */
+#ggZen2026{zoom:1}
+.zenSect{position:relative;margin:14px 10px 22px;border-radius:22px;background:linear-gradient(160deg,#10331f,#0b2115);border:1px solid var(--brd);overflow:hidden;box-shadow:0 16px 38px #000b,inset 0 1px 0 #7fd4a033}
+.zenSect.live{border-color:var(--gold);box-shadow:0 16px 42px #000b,0 0 34px #ffd86b44,inset 0 1px 0 #7fd4a033}
+.zenSect.live::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 18% -30%,#ffe9a822,transparent 62%)}
+.zsHead{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(90deg,#123624,#234f33);border-bottom:1px solid #2f8a52}
+.zenSect.live .zsHead{background:linear-gradient(90deg,#2b3512,#3d4b15);border-bottom:1px solid #ffd86b55}
+.zsIco{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:radial-gradient(circle at 50% 30%,#6fe09a,#2f8a52 72%);box-shadow:0 0 16px #6fe09a66,inset 0 0 0 3px #0a2010;flex-shrink:0}
+.zenSect.live .zsIco{background:radial-gradient(circle at 50% 30%,#ffe9a8,#e8a11f 72%);box-shadow:0 0 20px #ffd86b88,inset 0 0 0 3px #0a2010;animation:zsPulse 1.6s ease-in-out infinite alternate}
+.zsInfo{flex:1;min-width:0}
+.zsInfo b{display:block;letter-spacing:1.5px;color:#b8f0c0;font-size:15px}
+.zenSect.live .zsInfo b{color:#ffe9a8}
+.zsInfo span{display:block;font-size:12px;color:var(--dim);margin-top:2px}
+.zsLive{padding:6px 14px;border-radius:999px;font-weight:900;font-size:11px;letter-spacing:2px;color:#4a3300;background:linear-gradient(180deg,#ffd86b,#e8a11f);box-shadow:0 0 18px #ffd86b66;white-space:nowrap;animation:zsPulse 1.4s ease-in-out infinite alternate}
+.zsComing{padding:6px 14px;border-radius:999px;font-weight:900;font-size:11px;letter-spacing:2px;color:#aee8a0;border:1px solid #3fae6a;background:#0d2a18cc;white-space:nowrap}
+@keyframes zsPulse{from{transform:scale(1)}to{transform:scale(1.09);box-shadow:0 0 26px #ffd86b99}}
+.zenTease{display:flex;gap:12px;align-items:center;padding:16px 18px;background:linear-gradient(150deg,#123a24,#0b2818)}
+.zenTease .cii{font-size:30px;filter:drop-shadow(0 0 12px #6fe09a88)}
+.zenTease b{color:#b8f0c0}
+#zenGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:16px}
+#zenGrid:empty{display:none}
+.zenEmpty{padding:24px;text-align:center;color:var(--dim);font-size:13px;letter-spacing:.5px}
+.zenCard{position:relative;background:linear-gradient(150deg,#123624,#0a200f);border:2px solid #2f8a52;border-radius:18px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:7px;box-shadow:0 8px 18px #000a,inset 0 1px 0 #7fd4a033;transition:.2s;min-width:0}
+.zenCard:hover{transform:translateY(-4px);border-color:#4fc27a;box-shadow:0 12px 26px #000c,0 0 20px #4fc27a66}
+.zenCard.done{border-color:var(--gold);box-shadow:0 0 22px #ffd86b55,0 8px 18px #000a;animation:zsPulse 2s ease-in-out infinite alternate}
+.zenCard .zenIconSlot{font-size:32px;line-height:0;min-height:78px;display:flex;align-items:center;justify-content:center}
+.zenCard.done .zenIconSlot canvas{filter:drop-shadow(0 0 12px #ffe9a888)}
+.pillZen{font-size:11px;font-weight:900;letter-spacing:.5px;padding:4px 10px;border-radius:999px;background:#0f2c1a;border:1px solid #3fae6a;color:#aee8a0;text-align:center}
+.zenCard.done .pillZen{background:linear-gradient(180deg,#ffd86b,#e8a11f);color:#4a3300;border-color:#ffe49a}
+.zenMark{position:absolute;top:-8px;right:-6px;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#ffe9a8,#e8a11f 75%);color:#4a3300;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px #ffd86b99}
+.enCard .enIconSlot{min-height:88px;display:flex;align-items:center;justify-content:center}
+.enCard.evoT canvas{filter:drop-shadow(0 0 10px #ffd86b77)}
+.upCard.live{border-color:var(--gold);box-shadow:0 0 26px #ffd86b55,0 10px 26px #000a}
+.upCard.live .upIco{filter:drop-shadow(0 0 10px #ffd86b88)}
+.zenTeaser.live{border-color:var(--gold);box-shadow:0 0 26px #ffd86b55,0 10px 26px #000a}
 </style>
 </head>
 <body>
@@ -4525,6 +4560,110 @@ var _rev=renderEvents;
   _dp(x,id,s,ang,t,lv);
  };
  window.GG_EVO=LOOKS;window.GG_EVO_COUNT=Object.keys(LOOKS).length;
+})();
+/* ===== OCT3: ZEN EVENT VIA VAULT CODE + ENCHANTER ZEN SECTION ===== */
+(function(){
+ "use strict";
+ var CODE="pneumonoultramicroscopicsilicovolcanoconiosis";
+ /* ---------- 1. ZEN UNLOCK LAYER ---------- */
+ var _zu=window.zenUnlocks;
+ window.zenUnlocks=function(){
+  if(SAVE.zenUnlocked)return true;
+  return _zu?!!_zu():true;
+ };
+ /* existing saves that already redeemed the vault code wake zen now */
+ if(SAVE.codes&&SAVE.codes[CODE]&&!SAVE.zenUnlocked)SAVE.zenUnlocked=true;
+ var _rd=window.redeemDlc;
+ window.redeemDlc=function(){
+  var hadZen=!!(SAVE.codes&&SAVE.codes[CODE]);
+  var r=_rd?_rd():undefined;
+  if((SAVE.codes&&SAVE.codes[CODE])&&!hadZen){
+   SAVE.zenUnlocked=true;
+   try{saveSave()}catch(e){}
+   if(typeof toast==="function")toast("\u262f The Zen event awakens \u2014 calm settles over the garden!","good");
+  }
+return r;
+ };
+ /* ---------- 1b. ZEN ACTION + EVENTS RIBBON (internal closuses use locked zenUnlocks) ---------- */
+ function zCost(d){return Math.round(150+((d&&d.rar)||0)*60)}
+ window.doZen=function(id){
+  if(!window.zenUnlocks||!zenUnlocks()){if(typeof toast==="function")toast("Zen settles on Oct 1, "+((SAVE&&SAVE.name)||"Gardener")+".","err");if(typeof sound==="function")sound("err");return}
+  var d=PLANTS[id];if(!d)return;
+  var c=zCost(d);
+  if((SAVE.sheck||0)<c){if(typeof toast==="function")toast("Not enough Sheckles!","err");if(typeof sound==="function")sound("err");return}
+  if(SAVE.zen&&SAVE.zen[id]){if(typeof toast==="function")toast(d.name+" is already at peace.","err");return}
+  SAVE.sheck-=c;SAVE.zen=SAVE.zen||{};SAVE.zen[id]=1;
+  try{saveSave()}catch(e){}
+  if(typeof sound==="function")sound("summon");
+  if(typeof toast==="function")toast(d.name+" has been Zen-Mutated \u2014 calm blooms grow stronger!","good");
+  refreshBals();renderEnchant();
+ };
+ function fixZenRibbon(){
+  var rib=document.querySelector("#evContent .newsRib");
+  if(!rib)return;
+  var live=window.zenUnlocks?zenUnlocks():false;
+  var b=rib.querySelector("b");
+  if(b)b.textContent=live?"ZEN EVENT \u2014 LIVE \u2605":"ZEN EVENT \u2014 COMING OCT 1";
+  var s=rib.querySelector("span:nth-of-type(2)");
+  if(s)s.textContent=live?"The garden has settled into calm \u2014 Zen-Mutate at the Enchanter.":"";
+}
+ var _oev=window.openEvents;
+ window.openEvents=function(){var r=_oev?_oev():undefined;fixZenRibbon();return r};
+ var _rq=window.renderQuests;
+ window.renderQuests=function(){var r=_rq?_rq():undefined;fixZenRibbon();return r};
+ var _rw=window.renderRewards;
+ window.renderRewards=function(){var r=_rw?_rw():undefined;fixZenRibbon();return r};
+ /* ---------- 2. ZEN SECTION INSIDE THE ENCHANTER ---------- */
+ function zCost2(d){return Math.round(150+((d&&d.rar)||0)*60)}
+ function zenEnchantChrome(){
+  var scr=document.getElementById("scr-enchant");
+  if(!scr||scr.querySelector("#zenSect"))return;
+  var live=window.zenUnlocks?zenUnlocks():false;
+  var sect=document.createElement("div");sect.id="zenSect";sect.className="zenSect"+(live?" live":"");
+  sect.innerHTML='<div class="zsHead"><span class="zsIco">\u262f</span>'
+   +'<div class="zsInfo"><b>'+(live?"ZEN EVENT \u00b7 LIVE":"ZEN MUTATIONS")+'</b>'
+   +'<span>'+(live?"A peaceful mutation settled over the garden \u2014 zen plants harvest calmer and hit harder.":"The garden stirs toward peace \u2014 find the vault pass-code to wake it early.")+'</span></div>'
+   +'<span class="'+(live?"zsLive":"zsComing")+'">'+(live?"LIVE":"OCT 1")+'</span></div>'
+   +'<div id="zenGrid"></div>';
+  var grid=document.getElementById("enGrid");
+  if(grid&&grid.parentNode)grid.parentNode.appendChild(sect);
+  else scr.appendChild(sect);
+  zenEnchantFill(live);
+ }
+ function zenEnchantFill(force){
+  var grid=document.getElementById("zenGrid");if(!grid)return;
+  var live=force!==undefined?force:(window.zenUnlocks?zenUnlocks():false);
+  grid.innerHTML="";
+  var sect=document.getElementById("zenSect");
+  if(sect)sect.className="zenSect"+(live?" live":"");
+  if(!live){
+   grid.innerHTML='<div class="zenTease"><div class="cii">\u262f</div>'
+    +'<div><b>ZEN EVENT \u00b7 COMING SOON</b><br>'
+    +'<span style="font-size:12px;color:var(--dim)">A peaceful mutation settles over the garden \u2014 zen plants harvest calmer and hit harder. Only the vault pass-code can wake it early.</span></div>'
+    +'<span class="zsComing">sleeps</span></div>';
+   return;
+  }
+  var ids=Object.keys(SAVE.plants||{});
+  if(!ids.length){grid.innerHTML='<div class="zenEmpty">No plants yet \u2014 win some stages and return to Zen-Mutate them.</div>';return}
+  ids.forEach(function(id){
+   var d=PLANTS[id];if(!d)return;
+   var zen=!!(SAVE.zen&&SAVE.zen[id]),cost=zCost(d);
+   var card=document.createElement("div");card.className="zenCard"+(zen?" done":"");
+   card.innerHTML='<div class="zenIconSlot"></div><b>'+d.name+'</b>'
+    +'<span class="pillZen">'+(zen?"\u2713 AT PEACE":"\u262f "+cost+" S")+'</span>'
+    +'<div style="font-size:11px;color:#aee8a0">'+(zen?"+22% stats \u00b7 calm":"+22% stats \u00b7 calm")+'</div>'
+    +'<button class="btn small" '+((zen||(SAVE.sheck||0)<cost)?"disabled":"")+' onclick="doZen(\''+id+'\')">'+(zen?"Zen\u2019d":"Zen-Mutate")+'</button>'
+    +((zen)?"<span class=\"zenMark\">\u2713</span>":"");
+   var slot=card.querySelector(".zenIconSlot");
+   if(slot)slot.appendChild(makeIcon(id,80));
+   grid.appendChild(card);
+  });
+ }
+ var _oe=openEnchant;
+ openEnchant=function(){var r=_oe?_oe():undefined;zenEnchantChrome();return r};
+ var _re=renderEnchant;
+ renderEnchant=function(){var r=_re?_re():undefined;if(document.getElementById("zenGrid"))zenEnchantFill();return r};
+ window.GG_OCT3=true;
 })();
 /**** End bundled feature set ****/
 </script>

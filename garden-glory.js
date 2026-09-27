@@ -3799,4 +3799,108 @@ var _rev=renderEvents;
  };
  window.GG_EVO=LOOKS;window.GG_EVO_COUNT=Object.keys(LOOKS).length;
 })();
+/* ===== OCT3: ZEN EVENT VIA VAULT CODE + ENCHANTER ZEN SECTION ===== */
+(function(){
+ "use strict";
+ var CODE="pneumonoultramicroscopicsilicovolcanoconiosis";
+ /* ---------- 1. ZEN UNLOCK LAYER ---------- */
+ var _zu=window.zenUnlocks;
+ window.zenUnlocks=function(){
+  if(SAVE.zenUnlocked)return true;
+  return _zu?!!_zu():true;
+ };
+ /* existing saves that already redeemed the vault code wake zen now */
+ if(SAVE.codes&&SAVE.codes[CODE]&&!SAVE.zenUnlocked)SAVE.zenUnlocked=true;
+ var _rd=window.redeemDlc;
+ window.redeemDlc=function(){
+  var hadZen=!!(SAVE.codes&&SAVE.codes[CODE]);
+  var r=_rd?_rd():undefined;
+  if((SAVE.codes&&SAVE.codes[CODE])&&!hadZen){
+   SAVE.zenUnlocked=true;
+   try{saveSave()}catch(e){}
+   if(typeof toast==="function")toast("\u262f The Zen event awakens \u2014 calm settles over the garden!","good");
+  }
+return r;
+ };
+ /* ---------- 1b. ZEN ACTION + EVENTS RIBBON (internal closuses use locked zenUnlocks) ---------- */
+ function zCost(d){return Math.round(150+((d&&d.rar)||0)*60)}
+ window.doZen=function(id){
+  if(!window.zenUnlocks||!zenUnlocks()){if(typeof toast==="function")toast("Zen settles on Oct 1, "+((SAVE&&SAVE.name)||"Gardener")+".","err");if(typeof sound==="function")sound("err");return}
+  var d=PLANTS[id];if(!d)return;
+  var c=zCost(d);
+  if((SAVE.sheck||0)<c){if(typeof toast==="function")toast("Not enough Sheckles!","err");if(typeof sound==="function")sound("err");return}
+  if(SAVE.zen&&SAVE.zen[id]){if(typeof toast==="function")toast(d.name+" is already at peace.","err");return}
+  SAVE.sheck-=c;SAVE.zen=SAVE.zen||{};SAVE.zen[id]=1;
+  try{saveSave()}catch(e){}
+  if(typeof sound==="function")sound("summon");
+  if(typeof toast==="function")toast(d.name+" has been Zen-Mutated \u2014 calm blooms grow stronger!","good");
+  refreshBals();renderEnchant();
+ };
+ function fixZenRibbon(){
+  var rib=document.querySelector("#evContent .newsRib");
+  if(!rib)return;
+  var live=window.zenUnlocks?zenUnlocks():false;
+  var b=rib.querySelector("b");
+  if(b)b.textContent=live?"ZEN EVENT \u2014 LIVE \u2605":"ZEN EVENT \u2014 COMING OCT 1";
+  var s=rib.querySelector("span:nth-of-type(2)");
+  if(s)s.textContent=live?"The garden has settled into calm \u2014 Zen-Mutate at the Enchanter.":"";
+}
+ var _oev=window.openEvents;
+ window.openEvents=function(){var r=_oev?_oev():undefined;fixZenRibbon();return r};
+ var _rq=window.renderQuests;
+ window.renderQuests=function(){var r=_rq?_rq():undefined;fixZenRibbon();return r};
+ var _rw=window.renderRewards;
+ window.renderRewards=function(){var r=_rw?_rw():undefined;fixZenRibbon();return r};
+ /* ---------- 2. ZEN SECTION INSIDE THE ENCHANTER ---------- */
+ function zCost2(d){return Math.round(150+((d&&d.rar)||0)*60)}
+ function zenEnchantChrome(){
+  var scr=document.getElementById("scr-enchant");
+  if(!scr||scr.querySelector("#zenSect"))return;
+  var live=window.zenUnlocks?zenUnlocks():false;
+  var sect=document.createElement("div");sect.id="zenSect";sect.className="zenSect"+(live?" live":"");
+  sect.innerHTML='<div class="zsHead"><span class="zsIco">\u262f</span>'
+   +'<div class="zsInfo"><b>'+(live?"ZEN EVENT \u00b7 LIVE":"ZEN MUTATIONS")+'</b>'
+   +'<span>'+(live?"A peaceful mutation settled over the garden \u2014 zen plants harvest calmer and hit harder.":"The garden stirs toward peace \u2014 find the vault pass-code to wake it early.")+'</span></div>'
+   +'<span class="'+(live?"zsLive":"zsComing")+'">'+(live?"LIVE":"OCT 1")+'</span></div>'
+   +'<div id="zenGrid"></div>';
+  var grid=document.getElementById("enGrid");
+  if(grid&&grid.parentNode)grid.parentNode.appendChild(sect);
+  else scr.appendChild(sect);
+  zenEnchantFill(live);
+ }
+ function zenEnchantFill(force){
+  var grid=document.getElementById("zenGrid");if(!grid)return;
+  var live=force!==undefined?force:(window.zenUnlocks?zenUnlocks():false);
+  grid.innerHTML="";
+  var sect=document.getElementById("zenSect");
+  if(sect)sect.className="zenSect"+(live?" live":"");
+  if(!live){
+   grid.innerHTML='<div class="zenTease"><div class="cii">\u262f</div>'
+    +'<div><b>ZEN EVENT \u00b7 COMING SOON</b><br>'
+    +'<span style="font-size:12px;color:var(--dim)">A peaceful mutation settles over the garden \u2014 zen plants harvest calmer and hit harder. Only the vault pass-code can wake it early.</span></div>'
+    +'<span class="zsComing">sleeps</span></div>';
+   return;
+  }
+  var ids=Object.keys(SAVE.plants||{});
+  if(!ids.length){grid.innerHTML='<div class="zenEmpty">No plants yet \u2014 win some stages and return to Zen-Mutate them.</div>';return}
+  ids.forEach(function(id){
+   var d=PLANTS[id];if(!d)return;
+   var zen=!!(SAVE.zen&&SAVE.zen[id]),cost=zCost(d);
+   var card=document.createElement("div");card.className="zenCard"+(zen?" done":"");
+   card.innerHTML='<div class="zenIconSlot"></div><b>'+d.name+'</b>'
+    +'<span class="pillZen">'+(zen?"\u2713 AT PEACE":"\u262f "+cost+" S")+'</span>'
+    +'<div style="font-size:11px;color:#aee8a0">'+(zen?"+22% stats \u00b7 calm":"+22% stats \u00b7 calm")+'</div>'
+    +'<button class="btn small" '+((zen||(SAVE.sheck||0)<cost)?"disabled":"")+' onclick="doZen(\''+id+'\')">'+(zen?"Zen\u2019d":"Zen-Mutate")+'</button>'
+    +((zen)?"<span class=\"zenMark\">\u2713</span>":"");
+   var slot=card.querySelector(".zenIconSlot");
+   if(slot)slot.appendChild(makeIcon(id,80));
+   grid.appendChild(card);
+  });
+ }
+ var _oe=openEnchant;
+ openEnchant=function(){var r=_oe?_oe():undefined;zenEnchantChrome();return r};
+ var _re=renderEnchant;
+ renderEnchant=function(){var r=_re?_re():undefined;if(document.getElementById("zenGrid"))zenEnchantFill();return r};
+ window.GG_OCT3=true;
+})();
 /**** End bundled feature set ****/
