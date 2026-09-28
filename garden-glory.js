@@ -4082,4 +4082,59 @@ return r;
  renderEvents=function(){var r=_rez?_rez():undefined;var pr=document.querySelector("#scr-zen .petalRain");if(pr)petalRain(pr);return r};
  window.GG_OCT4=true;
 })();
+/* ===== OCT5: ZEN PLANT AURA EFFECT IN BATTLE + EVERY ICON ===== */
+(function(){
+ "use strict";
+ /* ---------- 1. ZEN AURA DRAWN UNDER EVERY ZEN PLANT ---------- */
+ function zenAura(x,id,s,t){
+  x.save();
+  x.globalCompositeOperation="lighter";
+  var tt=(t&&!isNaN(t))?(+t):0;
+  var rad=30*s;
+  var g=x.createRadialGradient(0,-2*s,2*s,0,-2*s,rad);
+  g.addColorStop(0,"rgba(180,240,214,.30)");
+  g.addColorStop(.55,"rgba(143,224,175,.12)");
+  g.addColorStop(1,"rgba(143,224,175,0)");
+  x.fillStyle=g;x.beginPath();x.arc(0,-2*s,rad,0,7);x.fill();
+  x.strokeStyle="rgba(255,216,107,.4)";x.lineWidth=1.6*s;
+  if(x.setLineDash)x.setLineDash([4*s,5*s]);
+  x.beginPath();x.arc(0,-2*s,23*s,tt*.25,6.283+tt*.25);x.stroke();
+  if(x.setLineDash)x.setLineDash([]);
+  var n=6;
+  for(var i=0;i<n;i++){
+   var a2=tt*1.3+i*(6.283/n);
+   var px=Math.cos(a2)*19*s,py=Math.sin(a2)*8.5*s-4*s;
+   x.save();x.translate(px,py);x.rotate(a2+1.57);
+   x.fillStyle="rgba(255,224,150,.85)";
+   x.beginPath();x.moveTo(0,-2.8*s);x.quadraticCurveTo(3.2*s,0,0,2.8*s);x.quadraticCurveTo(-3.2*s,0,0,-2.8*s);x.fill();
+   x.restore();
+  }
+  for(var j=0;j<3;j++){
+   var a3=tt*1.6+j*2.1;
+   var sx=Math.cos(a3)*14*s,sy=Math.sin(a3*1.35)*12*s-2*s;
+   x.fillStyle="rgba(233,255,242,.8)";
+   x.beginPath();x.arc(sx,sy,1.5*s,0,7);x.fill();
+  }
+  x.restore();
+ }
+ var _dp5=drawPlantBody;
+ drawPlantBody=function(x,id,s,ang,t,lv){
+  if(SAVE.zen&&SAVE.zen[id]){try{zenAura(x,id,s,t||0)}catch(e){}}
+  return _dp5(x,id,s,ang,t,lv);
+ };
+ /* ---------- 2. TITLE SCREEN FLOATING PETALS ---------- */
+ (function(){
+  var d=document.getElementById("titleDeco");
+  if(!d||d.querySelector(".oct5petal"))return;
+  var pet=["\u273f","\u262f","\u2740","\u2726","\u2698"];
+  for(var i=0;i<7;i++){
+   var sp=document.createElement("span");sp.className="oct5petal";
+   sp.textContent=pet[i%pet.length];
+   sp.style.left=(5+Math.random()*90)+"%";
+   sp.style.top=(12+Math.random()*72)+"%";
+   d.appendChild(sp);
+  }
+ })();
+ window.GG_OCT5=true;
+})();
 /**** End bundled feature set ****/
