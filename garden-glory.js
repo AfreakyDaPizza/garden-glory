@@ -3903,4 +3903,183 @@ return r;
  renderEnchant=function(){var r=_re?_re():undefined;if(document.getElementById("zenGrid"))zenEnchantFill();return r};
  window.GG_OCT3=true;
 })();
+/* ===== OCT4: ZEN EVENT UPGRADE — PETALS, ZEN GARDEN, SHOP, RANKS, CTAs ===== */
+(function(){
+ "use strict";
+ SAVE.stats=SAVE.stats||{};SAVE.zenShop=SAVE.zenShop||{};SAVE.petals=SAVE.petals||0;
+ function ZenOn(){return !!(SAVE.zenUnlocked||(window.zenUnlocks&&zenUnlocks()));}
+ function charmLv(){return Math.min(4,(SAVE.zenShop&&SAVE.zenShop.charm)||0);}
+ function dropChance(){return 0.06+0.08*charmLv();}
+ function peaceCount(){var n=0,z=SAVE.zen||{};for(var k in z)if(z[k])n++;return n;}
+ function zenTier(){var n=peaceCount();return n>=9?3:(n>=6?2:(n>=3?1:0));}
+ function zenTierCoin(){return [0,.05,.10,.15][zenTier()];}
+ function tierName(){var t=zenTier();return t>=3?"\ud83e\udd47 Transcendent":(t>=2?"\ud83e\udd48 Serene":(t>=1?"\ud83e\udd49 Peaceful":"Awakening"));}
+ /* ---------- 1. BATTLE: PETAL DROPS + CALM COIN GLIMMER ---------- */
+ var _ke=killEnemy;
+ killEnemy=function(e){
+  _ke(e);
+  if(!(e&&e.dead))return;
+  if(ZenOn()&&Math.random()<dropChance()){
+   SAVE.petals=(SAVE.petals||0)+1;SAVE.stats.petals=(SAVE.stats.petals||0)+1;
+   var b=zenTierCoin();
+   if(b>0&&G){var v=Math.round(e.reward*b);if(v>0){G.sheck+=v;G.earned+=v;SAVE.stats.sheckEarned+=v;}}
+   if(G&&G.texts)G.texts.push({x:e.x,y:e.y-30,txt:"\u273f +1",col:"#c9f0d8",life:1.2});
+  }
+ };
+ /* ---------- 2. HUD PETAL PILL ---------- */
+ (function(){
+  var hud=document.getElementById("hud");
+  if(!hud)return;
+  var p=document.createElement("span");p.id="petalPill";p.className="pill";
+  p.style.color="#c9f0d8";p.innerHTML="\u273f 0";p.style.display="none";
+  hud.appendChild(p);
+ })();
+ var _rb=refreshBals;
+ refreshBals=function(){
+  _rb();
+  var p=document.getElementById("petalPill");
+  if(p){var on=ZenOn();p.style.display=on?"inline-block":"none";if(on)p.innerHTML="\u273f "+fmt(SAVE.petals||0);}
+ };
+ /* ---------- 3. ZEN GARDEN SCREEN ---------- */
+ var ZEN_ITEMS=[
+  {id:"charm",n:"\u273f Charm of Calm",tag:"petal +8%",d:"Permanently raise Zen Petal drop chance. One of four keepsakes.",repeat:false},
+  {id:"fountain",n:"\ud83d\udca7 Zen Fountain",tag:"repeat",d:"Offer 100 petals to the fountain \u2014 it returns 400 Sheckles.",repeat:true,cost:100,prize:{sheck:400}},
+  {id:"bloom",n:"\ud83c\udf3b Bloom Ritual",tag:"repeat",d:"Trade 250 petals for 25 Gems. A bloom in the night garden.",repeat:true,cost:250,prize:{gems:25}},
+  {id:"tiers",n:"\ud83c\udfc5 Determination",tag:"peace ranks",d:"3 / 6 / 9 plants at peace turn +5 / +10 / +15 of each reward into calm coins.",repeat:false}
+ ];
+ function charmCost(){return 30+25*charmLv();}
+ function openZen(){
+  if(!ZenOn()){if(typeof toast==="function")toast("\u262f The Zen Garden opens when the event is live.","err");return}
+  var el=document.getElementById("scr-zen");
+  if(!el){el=document.createElement("div");el.className="screen";el.id="scr-zen";document.body.appendChild(el);}
+  el.innerHTML='<div class="topbar"><button class="btn small ghost" id="zenBack">\u2190 Home</button><b>\u262f Zen Garden</b><span class="pill zenPetalPill" id="zenPetalBal">\u273f 0</span></div>'
+   +'<div class="zenPage"><div class="petalRain"></div>'
+   +'<div class="zpHero"><span class="zsIco">\u262f</span><div><b>THE GARDEN IS AT PEACE</b><div style="font-size:13px;color:var(--dim)">Defeat foes in battle for a chance at a \u273f Zen Petal \u2014 then spend them here, or settle your plants at peace.</div></div><span class="zsLive">LIVE</span></div>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 2px">'
+   +'<span class="pill zenMeta">plants at peace <b>'+peaceCount()+'</b></span>'
+   +'<span class="pill zenMeta">determination <b>'+tierName()+'</b></span>'
+   +'<span class="pill zenMeta">petals &rarr; coins <b>+'+Math.round(zenTierCoin()*100)+'%</b></span>'
+   +'<span class="pill zenMeta">drop chance <b>'+Math.round(dropChance()*100)+'%</b></span>'
+   +'</div>'
+   +'<div class="zpSec"><div class="zpSecT">\u262f GARDEN AT PEACE</div><div id="zenPeaceGrid" class="zenPeaceGrid"></div></div>'
+   +'<div class="zpSec"><div class="zpSecT">\u273f PETAL SHOP</div><div id="zenShopGrid" class="zenShopGrid"></div></div>'
+   +'<div class="zpSec"><div class="zpSecT">\u2726 HOW TO EARN</div><div class="zpHow">Every foe defeated in battle carries a chance at a \u273f Zen Petal. The <b>Charm of Calm</b> raises your drop chance (+8% per keepsake), and every plant at peace adds <b>+22% power</b> while raising your <b>petal-to-coin</b> glimmer.</div></div>'
+   +'</div>';
+  document.getElementById("zenBack").onclick=function(){if(typeof goHub==="function")goHub()};
+  show("scr-zen");renderZen();refreshBals();
+ }
+ function renderZen(){
+  var p=document.getElementById("zenPetalBal");
+  if(p)p.textContent="\u273f "+(fmt?fmt(SAVE.petals||0):SAVE.petals||0);
+  var pg=document.getElementById("zenPeaceGrid"),ids=Object.keys(SAVE.plants||{}),shown=0;
+  if(pg){
+   pg.innerHTML="";
+   ids.forEach(function(id){
+    if(!(SAVE.zen&&SAVE.zen[id]))return;
+    var d=PLANTS[id];if(!d)return;shown++;
+    var c=document.createElement("div");c.className="zenPeaceCard";
+    c.innerHTML='<div class="zpIco"></div><b>'+d.name+'</b><span>\u262f at peace \u00b7 +22% power</span>';
+    var s=c.querySelector(".zpIco");if(s)s.appendChild(makeIcon(id,52));
+    pg.appendChild(c);
+   });
+   if(!shown)pg.innerHTML='<div style="color:var(--dim);font-size:13px;grid-column:1/-1;padding:12px">No plants at peace yet \u2014 open the Enchanter and Zen-Mutate one.</div>';
+  }
+  var sg=document.getElementById("zenShopGrid");
+  if(sg){
+   sg.innerHTML="";
+   ZEN_ITEMS.forEach(function(it){
+    var card=document.createElement("div");card.className="zenShopCard";
+    var body='<span class="zTag">'+it.tag+'</span><span class="zItem">'+it.n+'</span><span class="zD">'+it.d+'</span>';
+    if(it.id==="charm"){
+     var lv=charmLv();
+     body+='<span class="zCost">\u273f '+charmCost()+' \u00b7 keepsakes '+lv+'/4</span>';
+     body+='<button class="btn gold small" '+((lv>=4||(SAVE.petals||0)<charmCost())?"disabled":"")+' onclick="zenShopBuy(\'charm\')">'+(lv>=4?"Cherished \u2713":"Charm")+'</button>';
+    }else if(it.id==="tiers"){
+     var t=zenTier();
+     body+='<span class="zCost">'+(t>=3?"\ud83e\udd47 MAX":(t>=1?"current "+tierName():"next rank at 3 plants"))+'</span>';
+     body+='<button class="btn small" disabled>'+tierName()+'</button>';
+    }else{
+     var en=(SAVE.petals||0)<it.cost;
+     body+='<span class="zCost">\u273f '+it.cost+'</span>';
+     body+='<button class="btn gold small" '+(en?"disabled":"")+' onclick="zenShopBuy(\''+it.id+'\')">Buy</button>';
+    }
+    card.innerHTML=body;
+    sg.appendChild(card);
+   });
+  }
+ }
+ window.zenShopBuy=function(id){
+  if(!ZenOn()){if(typeof toast==="function")toast("\u262f Zen is not live.","err");return}
+  var p=SAVE.petals||0;
+  if(id==="charm"){
+   var lv=charmLv();if(lv>=4){toast("You have all four keepsakes.","err");return}
+   var c=charmCost();
+   if(p<c){toast("Not enough Zen Petals!","err");if(typeof sound==="function")sound("err");return}
+   SAVE.petals=p-c;SAVE.zenShop.charm=lv+1;
+   toast("\u273f A Charm of Calm settles into your pocket \u2014 petals come easier now.","good");
+  }else if(id==="fountain"){
+   if(p<100){toast("Need 100 petals.","err");return}
+   SAVE.petals=p-100;SAVE.sheck=(SAVE.sheck||0)+400;
+   toast("\ud83d\udca7 The fountain glimmers \u2014 +400 Sheckles.","good");
+  }else if(id==="bloom"){
+   if(p<250){toast("Need 250 petals.","err");return}
+   SAVE.petals=p-250;SAVE.gems=(SAVE.gems||0)+25;
+   toast("\ud83c\udf3b A bloom unfolds \u2014 +25 Gems.","good");
+  }else return;
+  try{saveSave()}catch(e){}
+  if(typeof sound==="function")sound("summon");
+  refreshBals();renderZen();if(typeof renderEnchant==="function")renderEnchant();
+ };
+ function petalRain(el){
+  if(!el||el.querySelector("span"))return;
+  for(var i=0;i<12;i++){
+   var s=document.createElement("span");s.textContent="\u273f";
+   s.style.left=(Math.random()*96+2)+"%";
+   s.style.animationDuration=(3+Math.random()*3).toFixed(2)+"s";
+   s.style.animationDelay=(Math.random()*3).toFixed(2)+"s";
+   s.style.animationIterationCount="infinite";
+   el.appendChild(s);
+  }
+ }
+ window.openZen=openZen;window.zenPetals=function(){return SAVE.petals||0};
+ /* ---------- 4. CTAs: HUB + ENCHANTER + EVENTS ---------- */
+ var _gh=goHub;
+ goHub=function(){var r=_gh?_gh():undefined;hubZenCta();return r};
+ function hubZenCta(){
+  var spot=document.querySelector("#scr-hub .hubZenSpot");
+  if(!spot||(spot.className||"").indexOf("live")<0)return;
+  if(spot.getAttribute("data-zencta"))return;
+  spot.setAttribute("data-zencta","1");
+  var btn=document.createElement("button");btn.className="btn small gold zenGardenBtn";btn.style.marginLeft="6px";
+  btn.style.flex="0 0 auto";btn.textContent="\u262f Zen Garden";
+  btn.onclick=function(){openZen()};
+  spot.appendChild(btn);
+ }
+ var _oe3=openEnchant;
+ openEnchant=function(){var r=_oe3?_oe3():undefined;enchanterZenCta();return r};
+ function enchanterZenCta(){
+  if(!ZenOn())return;
+  var head=document.querySelector("#scr-enchant .zenSect.live .zsHead");
+  if(!head||head.querySelector(".zenGardenBtn"))return;
+  var b=document.createElement("button");b.className="btn small gold zenGardenBtn";b.textContent="\u262f Garden";
+  b.onclick=function(){openZen()};
+  head.appendChild(b);
+ }
+ var _oev2=openEvents;
+ openEvents=function(){var r=_oev2?_oev2():undefined;eventsZenCta();return r};
+ function eventsZenCta(){
+  if(!ZenOn())return;
+  var rib=document.querySelector("#evContent .newsRib");
+  if(!rib||rib.querySelector(".zenGardenBtn"))return;
+  var b=document.createElement("button");b.className="btn small gold zenGardenBtn";b.textContent="\u262f Zen Garden";
+  b.onclick=function(){openZen()};
+  rib.appendChild(b);
+ }
+ /* ---------- 5. PETAL RAIN ON EVENTS + ZEN SCREEN ---------- */
+ var _rz=renderZen;
+ renderZen=function(){var r=_rz?_rz():undefined;var pr=document.querySelector("#scr-zen .petalRain");if(pr)petalRain(pr);return r};
+ var _rez=renderEvents;
+ renderEvents=function(){var r=_rez?_rez():undefined;var pr=document.querySelector("#scr-zen .petalRain");if(pr)petalRain(pr);return r};
+ window.GG_OCT4=true;
+})();
 /**** End bundled feature set ****/
