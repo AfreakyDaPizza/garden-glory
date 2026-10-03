@@ -7,8 +7,8 @@ const fmt=n=>Math.round(n).toLocaleString("en-US");
 function RNG(seed){let a=seed>>>0;const f=()=>{a|=0;a=a+1831565813|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};return{f,int:n=>Math.floor(f()*n),pick:arr=>arr[Math.floor(f()*arr.length)],chance:p=>f()<p}}
 
 let SAVE=null;
-const DEF_SAVE=()=>({v:2,name:"",tutorialDone:false,tourDone:false,sheck:150,gems:0,mute:false,levels:{},plants:{},loadout:[],bugsSeen:{},labJobs:[],daily:null,dayClaims:{},welcomed:false,codes:{},infSci:false,hell:false,shards:0,evo:{},stats:{kills:0,waves:0,summons:0,sheckEarned:0}});
-function loadSave(){try{const raw=localStorage.getItem("gglory_save");if(raw){SAVE=Object.assign(DEF_SAVE(),JSON.parse(raw));SAVE.stats=Object.assign({kills:0,waves:0,summons:0,sheckEarned:0},SAVE.stats||{});SAVE.bugsSeen=SAVE.bugsSeen||{};SAVE.labJobs=SAVE.labJobs||[];SAVE.dayClaims=SAVE.dayClaims||{};SAVE.evo=SAVE.evo||{};for(const k in SAVE.levels)if(SAVE.levels[k]===true)SAVE.levels[k]=3;return}}catch(e){}SAVE=DEF_SAVE()}
+const DEF_SAVE=()=>({v:2,name:"",tutorialDone:false,tourDone:false,sheck:150,gems:0,mute:false,levels:{},plants:{},loadout:[],bugsSeen:{},labJobs:[],daily:null,dayClaims:{},welcomed:false,codes:{},infSci:false,hell:false,shards:0,evo:{},zen:{},zenShop:{},zenMeditate:0,zenUnlocked:false,petals:0,stats:{kills:0,waves:0,summons:0,sheckEarned:0,petals:0}});
+function loadSave(){try{const raw=localStorage.getItem("gglory_save");if(raw){SAVE=Object.assign(DEF_SAVE(),JSON.parse(raw));SAVE.stats=Object.assign({kills:0,waves:0,summons:0,sheckEarned:0,petals:0},SAVE.stats||{});SAVE.bugsSeen=SAVE.bugsSeen||{};SAVE.labJobs=SAVE.labJobs||[];SAVE.dayClaims=SAVE.dayClaims||{};SAVE.evo=SAVE.evo||{};SAVE.zen=SAVE.zen||{};SAVE.zenShop=SAVE.zenShop||{};for(const k in SAVE.levels){const v=SAVE.levels[k];SAVE.levels[k]=clamp(v===true?3:Math.floor(+v)||0,0,3)}return}}catch(e){}SAVE=DEF_SAVE()}
 function saveSave(){try{localStorage.setItem("gglory_save",JSON.stringify(SAVE))}catch(e){}}
 loadSave();
 
@@ -170,7 +170,36 @@ const PATH_TEMPLATES=[
 ];
 
 const App={screen:"scr-title",world:0};
-function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));App.screen=id}
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));App.screen=id;if(id==="scr-game")requestAnimationFrame(fitCanvas)}
+function fitCanvas(){
+ const box=$("cvBox"),cv=$("cv"),left=$("leftCol"),side=$("side");
+ if(!box||!cv||!left)return;
+ const sideW=(side?side.getBoundingClientRect().width:0)+6;
+ const vw=window.innerWidth||document.documentElement.clientWidth;
+ const avail=Math.max(240,vw-sideW);
+ const ar=cv.width/cv.height;
+ const pad=(parseFloat(getComputedStyle(cv).borderLeftWidth)||0)*2;
+ left.style.flex="0 0 auto";
+ left.style.minWidth="0";
+ box.style.flex="0 0 auto";
+ let w=Math.floor(avail),h=Math.floor(avail/ar);
+ for(let i=0;i<4;i++){
+  left.style.width=(w+pad)+"px";
+  const bh=box.clientHeight;
+  if(!bh)return;
+  const nw=Math.min(avail,Math.floor(bh*ar));
+  if(nw===w)break;
+  w=nw;
+ }
+ h=Math.floor(w/ar);
+ left.style.width=(w+pad)+"px";
+ box.style.width=(w+pad)+"px";
+ cv.style.width=w+"px";
+ cv.style.height=h+"px";
+}
+window.addEventListener("resize",fitCanvas);
+window.addEventListener("orientationchange",()=>setTimeout(fitCanvas,120));
+document.addEventListener("fullscreenchange",()=>setTimeout(fitCanvas,80));
 function toast(msg,type){const t=document.createElement("div");t.className="toast "+(type||"");t.textContent=msg;$("toastRoot").appendChild(t);requestAnimationFrame(()=>t.classList.add("on"));setTimeout(()=>{t.classList.remove("on");setTimeout(()=>t.remove(),300)},2300)}
 function modal(html){const r=$("modalRoot");r.innerHTML="";const back=document.createElement("div");back.className="mback";const p=document.createElement("div");p.className="panel";p.innerHTML=html;back.appendChild(p);r.appendChild(back);return p}
 function closeModal(){$("modalRoot").innerHTML=""}
@@ -222,7 +251,7 @@ function goHub(){
  const tip=TIPS[Math.floor(Math.random()*TIPS.length)];
  $("advisorTip").textContent=(SAVE.tutorialDone&&!SAVE.tourDone)?"Come, walk with me. There is much to show you.":tip;
  if(SAVE.tutorialDone&&!SAVE.tourDone)setTimeout(startTour,450);
- const totalStages=120,completedStages=SAVE.w?SAVE.w.reduce((a,w,i)=>a+(SAVE.done&&SAVE.done[i]?Object.keys(SAVE.done[i]).length:0),0):0;
+ const totalStages=120,completedStages=Object.keys(SAVE.levels).length;
  const totalPlants=Object.keys(SAVE.plants||{}).length;
  $("hubStats").textContent=`${completedStages}/${totalStages} Stages Cleared  ·  ${totalPlants}/${Object.keys(PLANTS).length} Plants Unlocked`;
  initHubBg();
@@ -242,9 +271,12 @@ function initHubBg(){
   }
   ctx.globalAlpha=1;
  }
- if(window.__hubAnim)cancelAnimationFrame(window.__hubAnim);
- function loop(){draw();window.__hubAnim=requestAnimationFrame(loop)}
- loop();
+  if(window.__hubAnim)cancelAnimationFrame(window.__hubAnim);
+  function loop(){
+   if(App.screen!=="scr-hub"){window.__hubAnim=0;return}
+   draw();window.__hubAnim=requestAnimationFrame(loop)
+  }
+  loop();
 }
 
 const TOUR=[
@@ -770,6 +802,7 @@ function startLevel(w,idx){
   G.waves=genWaves(w,idx);
  }
  G.wi=-1;G.phase="prep";G.prepT=tut?999:12;G.spawnQ=[];G.time=0;G.speed=1;G.paused=false;G.over=false;
+ {const _sb=$("btnSpeed"),_pb=$("btnPause");if(_sb)_sb.textContent="1x";if(_pb)_pb.textContent="Pause";}
  G.sel=null;G.placing=null;G.inspect=null;G.kills=0;G.earned=0;G.pending=[];
  G.amb=[];
  {
@@ -1064,13 +1097,16 @@ function killEnemy(e){
  if(e.split){
   for(let i=0;i<e.split;i++){
    const K=KIND.mini;
-   G.enemies.push({seg:e.seg,d:Math.max(0,e.d-i*14),trav:0,x:e.x+(i-1)*10,y:e.y+8,
-    hp:K.hp,maxhp:K.hp,spd:K.spd,r:K.r,leak:K.leak,reward:Math.round(K.reward*G.rmul),
-    k:"mini",nm:"sprat",col:e.col,fly:false,split:0,boss:false,slows:[],pois:null,atk:0,anim:Math.random()*7,dead:false,hitT:0});
+    G.enemies.push({seg:e.seg,d:Math.max(0,e.d-i*14),trav:0,x:e.x+(i-1)*10,y:e.y+8,
+     hp:K.hp,maxhp:K.hp,spd:K.spd,r:K.r,leak:K.leak,reward:Math.round(K.reward*G.rmul),
+     k:"mini",nm:"sprat",col:e.col,fly:false,split:0,boss:false,slows:[],pois:null,burn:null,stun:null,
+     weave:false,wob:0,heal:false,healCd:0,healFx:0,dash:false,dashing:0,dashCd:3,
+     lx:1,ly:0,atk:0,anim:Math.random()*7,dead:false,hitT:0,spawnT:0});
   }
  }
- sound("hit");
-}
+    sound("hit");
+    if(G&&!G.over)updateHUD();
+   }
 function leakEnemy(e){
  e.dead=true;G.hearts-=e.leak;
  $("cvBox").classList.remove("shake");void $("cvBox").offsetWidth;$("cvBox").classList.add("shake");
@@ -1099,7 +1135,7 @@ function sunBonus(p){
    const st=statOf("suntulip");dm+=st.admg;rt+=PLANTS.suntulip.arate;
   }
  }
- if(p.buffed){dm+=p.buffed.amt;rt+=p.buffed.amt*.3}
+  if(p.buffed&&p.buffed.t>0){dm+=p.buffed.amt;rt+=p.buffed.amt*.3}
  return{dm,rt};
 }
 function corridorHits(x,y,ang,len,wid){
@@ -1121,7 +1157,7 @@ function firePlant(p,e,dt){
   if(def.kind==="shoot"||def.kind==="cloud"){
     const dx=e.x-p.x,dy=e.y-p.y,dd=Math.hypot(dx,dy)||1;
     p.ang=Math.atan2(dy,dx);
-    const slowDef=def.slow?{f:def.slow.amt,t:def.slow.t}:null;
+    const slowDef=def.slow?{f:def.slow.f!==undefined?def.slow.f:1-(def.slow.amt||0),t:def.slow.t}:null;
     const stunDef=def.stun?{t:def.stun.t}:null;
      G.bullets.push({x:p.x,y:p.y,tg:e,spd:def.bs,dmg:def.dmg*mul,vx:dx/dd*def.bs,vy:dy/dd*def.bs,slow:slowDef,pois:def.pois||null,burn:def.burn||null,stun:stunDef,carrot:p.id==="carrot",cloud:def.kind==="cloud",col:p.id==="dragonfruit"?"#ff77c8":p.id==="twinpea"?"#8ee07e":p.id==="gatlingpea"?"#aef29a":p.id==="frostpea"?"#bdeeff":p.id==="toxicpuff"?"#c99bef":p.id==="phoenixpepper"?"#ff9d3d":p.id==="cloudblossom"?"#d0e8ff":"#7ed957",life:2.5});
      sound("shoot");
@@ -1159,9 +1195,11 @@ function firePlant(p,e,dt){
 }
 
 function updatePlants(dt){
- for(const p of G.plants){
+ for(const p of G.plants.slice()){
+  if(p.dead)continue;
   const def=PLANTS[p.id];
   p.rec=Math.max(0,(p.rec||0)-dt);
+  if(p.buffed){p.buffed.t-=dt;if(p.buffed.t<=0)p.buffed=null}
   if(def.kind==="eco"){
    p.cd-=dt;
    if(p.cd<=0){p.cd=statOf(p.id).int;G.coins.push({x:p.x+(Math.random()-.5)*20,y:p.y+(Math.random()-.5)*16,v:statOf(p.id).amt,life:9,ph:Math.random()*7})}
@@ -1225,7 +1263,7 @@ function updatePlants(dt){
 }
 
 function updateEnemies(dt){
- for(const e of G.enemies){
+ for(const e of G.enemies.slice()){
   if(e.dead)continue;
   e.anim+=dt;e.hitT=Math.max(0,e.hitT-dt);
   if(e.spawnT>0){e.spawnT-=dt;continue}
@@ -1287,6 +1325,8 @@ function updateEnemies(dt){
 }
 
 function destroyPlant(p){
+ p.dead=true;
+ if(G&&G.inspect===p)closeInspect();
  const def=PLANTS[p.id];
   if(p.id==="fattail"){
   const dmg=def.dmg||120;
@@ -1447,9 +1487,9 @@ function endLevel(win){
    SAVE.plants["moneypeas"]=SAVE.plants["moneypeas"]||{lv:1};
    SAVE.loadout=["carrot","moneypeas"];
   }
-  saveSave();
-  sound("win");
- }else sound("lose");
+   sound("win");
+  }else sound("lose");
+  try{saveSave()}catch(e){}
  refreshBals();
  const starsHtml=win?[1,2,3].map(i=>`<span style="color:${i<=stars?'var(--gold)':'#3a4a3e'}">&#9733;</span>`).join(""):"";
  const unlockHtml=gains.unlocks.map(id=>{
@@ -1461,9 +1501,9 @@ function endLevel(win){
  <h3>${win?(G.tut?"Stage One &amp; Two \u2014 Complete!":"Victory!"):"Defeat..."}</h3>
  <div class="resStars">${starsHtml}</div>
   ${win?"":`<div class="ctext">The wild broke through with ${Math.max(0,G.hearts)} hearts left. Replant and try again, ${SAVE.name||"gardener"}.</div>`}
- ${win?`<div class="rewardLine"><span>Sheckles</span><span class="shek">+${fmt(gains.sh)}</span></div>
- ${first?`<div class="rewardLine"><span>Gems</span><span class="gem">+${gains.gm}</span></div>`:""}
- ${unlockHtml}`:`<div class="rewardLine"><span>Foes defeated</span><span>${G.kills}</span></div>`}
+${win?`<div class="rewardLine"><span>Sheckles</span><span class="shek">+${fmt(gains.sh)}</span></div>
+  <div class="rewardLine"><span>Gems</span><span class="gem">+${gains.gm}</span></div>
+  ${unlockHtml}`:`<div class="rewardLine"><span>Foes defeated</span><span>${G.kills}</span></div>`}
  <div class="ctext" style="margin-top:10px;font-size:12px">${G.tut?"The Gardener waits for you back at the home garden...":""}</div>
   <div class="row" style="margin-top:12px">
    <button class="btn ghost" id="resRetry">Retry</button>
@@ -2245,7 +2285,7 @@ function renderNodes(){
   lg.appendChild(n);
  }
 }
-function firstReward(w,idx){return{s:Math.round(90+idx*14+w*120),g:8+w*2+((idx===9||idx===19)?12:0)}}
+function firstReward(w,idx){return{s:Math.round(90+idx*14+w*120),g:3+Math.min(7,(w*2)+Math.floor(idx/3))}}
 let selLoadout=[];
 function plantSourceHint(id){
  if(id==="carrot"||id==="moneypeas")return "Complete the tutorial";
@@ -2291,7 +2331,7 @@ function openLevelModal(w,idx){
  <h3>World ${w+1} \u00b7 Stage ${idx+1} <span style="color:${WORLD_THEMES[w].accent};font-size:14px">\u2014 ${WORLD_NAMES[w]}</span></h3>
  ${best?`<div style="color:#ffd75e;font-size:13px;letter-spacing:2px">BEST: ${"\u2605".repeat(best)}${"\u2606".repeat(3-best)}</div>`:""}
  ${bossTag}
- ${isFirst?`<div class="rewardLine"><span>First clear</span><span><span class="shek">+${fmt(fr.s)}</span> &nbsp;<span class="gem">+${fr.g}</span></span></div>`:`<div class="rewardLine"><span>Repeat clear</span><span class="shek">+${fmt(Math.round(25+idx*4))}</span></div>`}
+ ${isFirst?`<div class="rewardLine"><span>First clear</span><span><span class="shek">+${fmt(fr.s)}</span> &nbsp;<span class="gem">+${fr.g}</span></span></div>`:`<div class="rewardLine"><span>Repeat clear</span><span class="shek">+${fmt(Math.round(25+idx*4))}</span> <span class="gem">+${3+Math.min(4,w)}</span></div>`}
  ${milestone}
  <div style="margin:12px 0 4px;color:var(--dim);font-size:13px">Battle belt \u2014 choose up to <b>5</b> (<b id="loCount">${selLoadout.length}</b>/5). Locked plants show how to unlock them.</div>
  <div class="loSlots" id="loSlots">${[0,1,2,3,4].map(i=>`<div class="loSlot"></div>`).join("")}</div>
@@ -2533,7 +2573,7 @@ function renderLab(){
   else if(d.kind==="aura")effect=`Buff +${Math.round(st.admg*100)}%`;
   else effect=`DMG ${Math.round(d.dmg)} \u00d7 ${dmgMul(lv).toFixed(2)} = ${Math.round(d.dmg*dmgMul(lv))}`;
   row.insertAdjacentHTML("beforeend",`<div style="flex:1"><b>${d.name}</b> <span class="rar${d.rar}" style="font-size:11px">${RAR[d.rar]}</span><br>
-  <span style="font-size:12px;color:var(--dim)">Lv ${lv}/10 \u00b7 ${effect}</span></div>`);
+  <span style="font-size:12px;color:var(--dim)">Lv ${lv}/${mx} \u00b7 ${effect}</span></div>`);
    const btn=document.createElement("button");btn.className="btn small"+(max||SAVE.sheck>=cost&&!inQ&&busy<maxSci()?" gold":"");
    if(max){btn.textContent="MAX";btn.disabled=true}
    else if(inQ){btn.textContent="Researching...";btn.disabled=true}
@@ -2841,13 +2881,13 @@ function sept26Unlocks(){
 }
 function evoMul(id){return 1+.35*((SAVE.evo&&SAVE.evo[id])||0)}
 function isEvolved(id){return !!((SAVE.evo&&SAVE.evo[id])||0)}
-function hellMul(){return (G&&G.hell)?1.7:1}
+function hellMul(){return (G&&G.hellMode)?1.7:1}
 /* wrap placement damage to include evolution bonus */
 (function(){
  const _statOf=statOf;
  statOf=function(id){
   let st=_statOf(id);
-  if(st&&isEvolved(id)){st.dmg=Math.round(st.dmg*evoMul(id));st.amt=Math.round(st.amt*evoMul(id));st.hp=Math.round(st.hp*evoMul(id));st.admg=Math.round(st.admg*1.7)}
+  if(st&&isEvolved(id)){if(st.dmg!==undefined)st.dmg=Math.round(st.dmg*evoMul(id));if(st.amt!==undefined)st.amt=Math.round(st.amt*evoMul(id));if(st.hp!==undefined)st.hp=Math.round(st.hp*evoMul(id));if(st.admg!==undefined)st.admg=Math.round(st.admg*evoMul(id)*100)/100}
   return st;
  };
 })();
@@ -2893,11 +2933,10 @@ function doEvolve(id,cost){
 /* Hell mode toggle (in game inj haley if unlocked) */
 (function(){
  const _startLevel=startLevel;
- startLevel=function(w,idx){
-  const prev=G&&G.hell;
-  if(SAVE.hell&&sept26Unlocks()){G.hellMode=true;SAVE.hell=true}
-  return _startLevel(w,idx);
- };
+  startLevel=function(w,idx){
+   G.hellMode=!!(SAVE.hell&&sept26Unlocks());
+   return _startLevel(w,idx);
+  };
  const _endLevel=endLevel;
  endLevel=function(win){
   const r=_endLevel(win);
@@ -2913,12 +2952,11 @@ function doEvolve(id,cost){
   return waves;
  };
  const _killEnemy=killEnemy;
- killEnemy=function(e){
-  const r=_killEnemy(e);
-  if(G&&G.hellMode&&Math.random()<.3)SAVE.shards=(SAVE.shards||0)+1;
-  if(G&&G.hellMode){try{saveSave()}catch(e){}refreshBals();}
-  return r;
- };
+  killEnemy=function(e){
+   const r=_killEnemy(e);
+   if(G&&G.hellMode&&Math.random()<.3){SAVE.shards=(SAVE.shards||0)+1;refreshBals();}
+   return r;
+  };
 })();
 /* ============ GARDEN GLORY SEPT24: HELL OVERHAUL + LAB MAGIC + EVENTS + DECO ============ */
 (function(){
@@ -3119,26 +3157,12 @@ function doEvolve(id,cost){
  bindHellToggle();
  applyHell();
 })();
-/* ============ GARDEN GLORY SEP26: HELL BUGS + FUSION + ZEN + ENCHANTER FIX ============ */
+/* ============ GARDEN GLORY SEP26: HELL BUGS + FUSION + ENCHANTER FIX ============ */
 (function(){
- /* ---------------------------------------------------------- */
- /* ZEN EVENT GATE: unlocks Oct 1 2026                          */
- /* ---------------------------------------------------------- */
- var ZEN=new Date(2026,9,1);
- function zenUnlocks(){
-  var n=new Date();
-  if(n>=ZEN)return true;
-  if(n.getFullYear()>2026)return true;
-  if(n.getFullYear()===2026)return n.getMonth()>9||(n.getMonth()===9&&n.getDate()>=1);
-  return false;
- }
- function zenCost(d){return Math.round(150+((d&&d.rar)||0)*60)}
- window.ZEN=ZEN;window.zenUnlocks=zenUnlocks;
-
  /* ---------------------------------------------------------- */
  /* ENCHANTER FIX: the nav card had NO click handler, its back  */
  /* button called closeModal (a no-op here), and the shard pill */
- /* on the screen never refreshed. Rebuilt + Zen section.       */
+ /* on the screen never refreshed. Rebuilt (Zen section added later).  */
  /* ---------------------------------------------------------- */
  var navEn=document.getElementById("navEnchant");
  if(navEn&&!navEn.dataset.g2){
@@ -3150,31 +3174,28 @@ function doEvolve(id,cost){
   _rf();
   var b=document.querySelectorAll(".shardBal2");
   for(var i=0;i<b.length;i++)b[i].textContent=fmt(SAVE.shards);
-  var ne=document.getElementById("navEnchant");
-  if(ne)ne.className="navcard hw"+(sept26Unlocks()||zenUnlocks()?"":" lock");
- };
- function enchantScreenHtml(){
-  return '<div class="topbar"><button class="btn small ghost" id="enchBack">&#8592; Home</button><b>&#129668; Enchanter &amp; Zen</b><span class="pill shard shardBal2">0</span></div>'
-   +'<div style="text-align:center;color:var(--dim);font-size:13px;margin:8px 0">Evolve plants with Enchanting Shards &#8212; or Zen-Mutate them with calm Sheckles.</div>'
-   +'<div id="zenTease" style="display:none"></div>'
-   +'<div style="padding:0 14px"><b style="color:#c9b8ff">&#11088; EVOLUTIONS</b><span style="font-size:12px;color:var(--dim)"> &middot; +35% power per rank</span></div>'
-   +'<div id="enGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:12px;max-width:900px;margin:auto"></div>'
-   +'<div style="padding:0 14px;margin-top:4px"><b style="color:#aee8a0">&#9784; ZEN MUTATIONS</b><span style="font-size:12px;color:var(--dim)"> &middot; calm &amp; strong</span></div>'
-   +'<div id="zenGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:12px;max-width:900px;margin:auto"></div>';
- }
- openEnchant=function(){
-  if(!sept26Unlocks()){if(typeof toast==="function")toast("The Enchanter awakens Sep 26!","err");return}
-  var el=document.getElementById("scr-enchant");
-  if(!el){
-   el=document.createElement("div");el.className="screen";el.id="scr-enchant";
-   document.body.appendChild(el);
+   var ne=document.getElementById("navEnchant");
+   if(ne)ne.className="navcard hw"+(sept26Unlocks()||(window.zenUnlocks&&zenUnlocks())?"":" lock");
+  };
+  function enchantScreenHtml(){
+   return '<div class="topbar"><button class="btn small ghost" id="enchBack">&#8592; Home</button><b>&#129668; Enchanter</b><span class="pill shard shardBal2">0</span></div>'
+    +'<div style="text-align:center;color:var(--dim);font-size:13px;margin:8px 0">Evolve plants with Enchanting Shards &#8212; or Zen-Mutate them with calm Sheckles.</div>'
+    +'<div style="padding:0 14px"><b style="color:#c9b8ff">&#11088; EVOLUTIONS</b><span style="font-size:12px;color:var(--dim)"> &middot; +35% power per rank</span></div>'
+    +'<div id="enGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:12px;max-width:900px;margin:auto"></div>';
   }
-  el.innerHTML=enchantScreenHtml();
-  document.getElementById("enchBack").onclick=function(){if(typeof goHub==="function")goHub()};
-  show("scr-enchant");refreshBals();renderEnchant();
- };
+  openEnchant=function(){
+   if(!sept26Unlocks()){if(typeof toast==="function")toast("The Enchanter awakens Sep 26!","err");return}
+   var el=document.getElementById("scr-enchant");
+   if(!el){
+    el=document.createElement("div");el.className="screen";el.id="scr-enchant";
+    document.body.appendChild(el);
+   }
+   el.innerHTML=enchantScreenHtml();
+   document.getElementById("enchBack").onclick=function(){if(typeof goHub==="function")goHub()};
+   show("scr-enchant");refreshBals();renderEnchant();
+  };
  renderEnchant=function(){
-  var grid=document.getElementById("enGrid"),zgrid=document.getElementById("zenGrid"),tease=document.getElementById("zenTease");
+  var grid=document.getElementById("enGrid");
   if(!grid)return;
   var ids=Object.keys(SAVE.plants||{});
   grid.innerHTML="";
@@ -3188,73 +3209,9 @@ function doEvolve(id,cost){
     +'<div style="font-size:11px;color:#9fe08f">+35% all stats &middot; resets to Lv 1</div>';
    grid.appendChild(card);
   });
-  if(!zgrid)return;
-  zgrid.innerHTML="";
-  if(!zenUnlocks()){
-   if(tease){
-    tease.style.display="block";
-    tease.innerHTML='<div style="display:flex;gap:12px;align-items:center;background:linear-gradient(150deg,#123a24,#0b2818);border:2px solid #3fae6a;border-radius:16px;padding:14px 18px;margin:6px 12px 2px">'
-     +'<div style="font-size:34px">&#9784;</div><div style="flex:1"><b style="color:#b8f0c0">ZEN EVENT &middot; OCT 1</b><br><span style="font-size:12px;color:var(--dim)">A peaceful mutation settles over the garden &#8212; zen plants harvest calmer and hit harder. Only a little while away.</span></div>'
-     +'<div style="font-size:12px;font-weight:800;color:#aee8a0;white-space:nowrap">coming soon</div></div>';
-   }
-   return;
-  }
-  if(tease)tease.style.display="none";
-  ids.forEach(function(id){
-   var d=PLANTS[id],zen=!!(SAVE.zen&&SAVE.zen[id]),cost=zenCost(d);
-   var card=document.createElement("div");card.className="zenCard"+(zen?" done":"");
-   card.innerHTML='<div style="font-size:32px">'+makeIcon(id,80)+'</div><b>'+d.name+'</b>'
-    +'<span class="pillZen">'+(zen?"&#10003; AT PEACE":"&#9784; "+cost+" S")+'</span>'
-    +'<div style="font-size:11px;color:#aee8a0">'+(zen?"+22% stats":"+22% stats &middot; calm")+'</div>'
-    +'<button class="btn small" '+((zen||(SAVE.sheck||0)<cost||!zenUnlocks())?"disabled":"")+' onclick="doZen(\''+id+'\')">'+(zen?"Zen&#8217;d":"Zen-Mutate")+'</button>';
-   zgrid.appendChild(card);
-  });
- };
- function doZen(id){
-  if(!zenUnlocks()){if(typeof toast==="function")toast("Zen settles on Oct 1, "+((SAVE&&SAVE.name)||"Gardener")+".","err");if(typeof sound==="function")sound("err");return}
-  var d=PLANTS[id],c=zenCost(d);
-  if((SAVE.sheck||0)<c){if(typeof toast==="function")toast("Not enough Sheckles!","err");if(typeof sound==="function")sound("err");return}
-  if(SAVE.zen&&SAVE.zen[id]){if(typeof toast==="function")toast(d.name+" is already at peace.","err");return}
-  SAVE.sheck-=c;SAVE.zen=SAVE.zen||{};SAVE.zen[id]=1;
-  try{saveSave()}catch(e){}
-  if(typeof sound==="function")sound("summon");
-  if(typeof toast==="function")toast(d.name+" has been Zen-Mutated &#8212; calm blooms grow stronger!","good");
-  refreshBals();renderEnchant();
- }
- window.doZen=doZen;
-
- /* Zen stat boost layered on top of evolutions */
- (function(){
-  var _st=statOf;
-  statOf=function(id){
-   var st=_st(id);
-   if(st&&(SAVE.zen&&SAVE.zen[id])){
-    if(st.dmg)st.dmg=Math.round(st.dmg*1.22);
-    if(st.amt)st.amt=Math.round(st.amt*1.22);
-    if(st.hp)st.hp=Math.round(st.hp*1.12);
-    if(st.admg)st.admg=st.admg+.03;
-   }
-   return st;
   };
- })();
 
- /* Zen badge on battle cards */
- (function(){
-  var _bsc=buildSideCards;
-  buildSideCards=function(){
-   _bsc();
-   var sc=document.getElementById("sideCards");if(!sc)return;
-   var cards=sc.querySelectorAll(".card");
-   for(var i=0;i<cards.length;i++){
-    var cd=cards[i],id=cd&&cd.dataset.id;
-    if(id&&SAVE.zen&&SAVE.zen[id]&&!cd.querySelector(".zenMark")){
-     var m=document.createElement("span");m.className="zenMark";m.textContent="\u9784";cd.appendChild(m);
-    }
-   }
-  };
- })();
-
- /* ---------------------------------------------------------- */
+  /* ---------------------------------------------------------- */
  /* HELL BUGS + FUSION BUGS                                     */
  /* ---------------------------------------------------------- */
  if(!KIND.fusion)KIND.fusion={hp:96,spd:34,r:18,leak:2,reward:24};
@@ -3363,36 +3320,8 @@ function doEvolve(id,cost){
   };
  })();
 
- /* ---------------------------------------------------------- */
- /* EVENTS: ZEN news ribbon (Oct 1 teaser / live) + profile stat */
- /* ---------------------------------------------------------- */
- function zenRibbon(){
-  var c=document.getElementById("evContent");if(!c)return;
-  if(c.querySelector(".newsRib"))return;
-  var un=zenUnlocks();
-  var days=Math.max(0,Math.ceil((ZEN-new Date())/86400000));
-  var el=document.createElement("div");el.className="newsRib";
-  el.innerHTML='<span class="xi">&#9784;</span><div><b>'+(un?"ZEN EVENT &#8212; LIVE &#9733;":"ZEN EVENT &#8212; COMING OCT 1")+'</b><br><span style="font-size:12px;color:var(--dim)">'+(un?"Zen-Mutate any plant at the Enchanter for calm +22% power.":"A peaceful mutation sleeps in the garden until Oct 1 &#8212; zen plants harvest calmer and hit harder.")+'</span></div>'
-   +'<span class="cd">'+(un?"&#9733; LIVE":"&#9203; "+days+"d left")+'</span>';
-  c.insertBefore(el,c.firstChild);
- }
- (function(){
-  var _rq=renderQuests;
-  renderQuests=function(){_rq();zenRibbon()};
-  var _rw=renderRewards;
-  renderRewards=function(){_rw();zenRibbon()};
  })();
- (function(){
-  var _op=openProfile;
-  openProfile=function(){
-   _op();
-   var ps=document.getElementById("profStats");if(!ps)return;
-   var n=0,zen=SAVE.zen||{};for(var k in zen)if(zen[k])n++;
-   ps.insertAdjacentHTML("beforeend","<span>Zen-mutated</span><span>"+n+"</span>");
-  };
- })();
-})();
-/* ===== GARDEN GLORY OCT: ENCHANTER FIX + EVOLVED LOOKS + FESTIVAL EVENTS + ZEN HUB TEASER ===== */
+/* ===== GARDEN GLORY OCT: ENCHANTER FIX + EVOLVED LOOKS + FESTIVAL EVENTS ===== */
 (function(){
  "use strict";
  /* ---------- 1. EVOLVED PLANT LOOKS ---------- */
@@ -3531,25 +3460,7 @@ card.innerHTML='<div class="enIconSlot" style="font-size:32px;line-height:0"></d
   if(after&&!before&&typeof toast==="function")toast("A new evolved form blooms \u2014 look how it glows!","good");
   return r;
  };
- /* ---------- 4. ZEN HUB TEASER (SEEN ON FIRST VISIT) ---------- */
- var _gh=goHub;
- goHub=function(){var r=_gh();hubZenBanner();return r};
- function hubZenBanner(){
-  var h=document.getElementById("scr-hub");if(!h)return;
-  var live=!!(typeof zenUnlocks==="function"&&zenUnlocks());
-  var spot=h.querySelector(".hubZenSpot");
-  if(!spot){
-spot=document.createElement("div");spot.className="hubZenSpot";
-   var nav=h.querySelector(".navgrid");
-   if(nav)nav.parentNode.insertBefore(spot,nav);else h.appendChild(spot);
-  }
-  spot.className="hubZenSpot"+(live?" live":"");
-  var days=Math.max(0,Math.ceil((ZEN-new Date())/86400000));
-  spot.innerHTML=live
-   ?'<div class="zenTeaser live"><div class="ztI">\u262f</div><div><b>ZEN EVENT \u00b7 LIVE</b><br><span style="color:var(--dim)">The garden has settled into calm. Collect <b>Zen Petals</b> in battle and awaken your plants \u2014 visit <b>Events</b>.</span></div><span class="ztC">OPEN</span></div>'
-   :'<div class="zenTeaser"><div class="ztI">\u262f</div><div><b>ZEN EVENT \u00b7 COMING SOON</b><br><span style="color:var(--dim)">In '+days+' day'+(days===1?"":"s")+' the garden settles into calm. Earn <b>Zen Petals</b> in battle and awaken plants to a deeper peace.</span></div><span class="ztC">OCT 1</span></div>';
- }
- /* ---------- 5. FESTIVAL EVENTS PAGE ---------- */
+ /* ---------- 4. FESTIVAL EVENTS PAGE ---------- */
  var _oe=openEvents;
  openEvents=function(){var r=_oe();festivalChrome();return r};
 var _rev=renderEvents;
@@ -3557,14 +3468,9 @@ var _rev=renderEvents;
  function comingUp(){
   var c=document.getElementById("evContent");if(!c)return;
   if(c.querySelector(".evUp"))return;
-  var live=!!(typeof zenUnlocks==="function"&&zenUnlocks());
-  var days=Math.max(0,Math.ceil((ZEN-new Date())/86400000));
-  var zenTag=live?'<span class="upTag on">\u25cf LIVE NOW</span>':'<span class="upTag">in '+days+' day'+(days===1?"":"s")+'</span>';
-  var zenDate=live?'Oct 1 \u2013 Nov 4 \u00b7 blooms now':'Oct 1 \u2013 Nov 4 \u00b7 unlocks soon';
   var wrap=document.createElement("div");wrap.className="evUp";
   wrap.innerHTML='<div class="evUpHead">\ud83c\udf8a COMING UP EVENTS \ud83c\udf8a</div>'
    +'<div class="upStrip">'
-   +'<div class="upCard'+(live?" live":"")+'"><div class="upIco">\u262f</div><div class="upT"><b>ZEN EVENT</b><span class="upDate">'+zenDate+'</span></div><p>The garden settles into calm. Earn <b>Zen Petals</b> in battle and awaken your plants to a deeper peace \u2014 more power, more calm.</p><div class="upFoot">'+zenTag+'<span class="upMore">lore \u00b7 mystery</span></div></div>'
    +'<div class="upCard spook"><div class="upIco">\ud83c\udf83</div><div class="upT"><b>BOO-CAMP</b><span class="upDate">later this season</span></div><p>A spookier garden is brewing \u2014 carved gourds, moonlit waves and a howling bonus round. Keep growing until the season turns.</p><div class="upFoot"><span class="upTag">???</span><span class="upMore">coming this season</span></div></div>'
    +'</div>';
   c.insertBefore(wrap,c.firstChild);
@@ -3627,7 +3533,7 @@ var _rev=renderEvents;
    wardrum:{extra:"drum"},
    phaseshift:{extra:"tri"},
    sunorchid:{extra:"coin",rich:true},
-   ecogourd:{extra:"coin"}
+   echogourd:{extra:"coin"}
   };
   var tw=tweaks[id]||{};
   return {kind:k,acc:accOf(id),rar:d.rar||0,tw:tw,heavy:tw.heavy===true};
@@ -3799,237 +3705,205 @@ var _rev=renderEvents;
  };
  window.GG_EVO=LOOKS;window.GG_EVO_COUNT=Object.keys(LOOKS).length;
 })();
-/* ===== OCT3: ZEN EVENT VIA VAULT CODE + ENCHANTER ZEN SECTION ===== */
+/* ===== ZEN EVENT (consolidated) ===== gate + mutation + petals + garden + meditation + board theme + zen-only plant ===== */
 (function(){
  "use strict";
+ var ZEN_DATE=new Date(2026,9,1);
  var CODE="pneumonoultramicroscopicsilicovolcanoconiosis";
- /* ---------- 1. ZEN UNLOCK LAYER ---------- */
- var _zu=window.zenUnlocks;
- window.zenUnlocks=function(){
+ var ZP="zenbloom";
+ SAVE.zen=SAVE.zen||{};SAVE.zenShop=SAVE.zenShop||{};SAVE.petals=SAVE.petals||0;
+ SAVE.stats=SAVE.stats||{};SAVE.stats.petals=SAVE.stats.petals||0;
+
+ /* ---------- 1. GATE ---------- */
+ function live(){
   if(SAVE.zenUnlocked)return true;
-  return _zu?!!_zu():true;
- };
- /* existing saves that already redeemed the vault code wake zen now */
- if(SAVE.codes&&SAVE.codes[CODE]&&!SAVE.zenUnlocked)SAVE.zenUnlocked=true;
- var _rd=window.redeemDlc;
- window.redeemDlc=function(){
-  var hadZen=!!(SAVE.codes&&SAVE.codes[CODE]);
-  var r=_rd?_rd():undefined;
-  if((SAVE.codes&&SAVE.codes[CODE])&&!hadZen){
-   SAVE.zenUnlocked=true;
-   try{saveSave()}catch(e){}
-   if(typeof toast==="function")toast("\u262f The Zen event awakens \u2014 calm settles over the garden!","good");
+  if(SAVE.codes&&SAVE.codes[CODE])return true;
+  var n=new Date();
+  if(n>=ZEN_DATE)return true;
+  return n.getFullYear()>2026;
+ }
+ window.ZEN=ZEN_DATE;window.zenUnlocks=live;
+ if(SAVE.codes&&SAVE.codes[CODE])SAVE.zenUnlocked=true;
+  var _rd=window.redeemDlc;
+  if(_rd)window.redeemDlc=function(){
+   var had=!!(SAVE.codes&&SAVE.codes[CODE]);
+   var r=_rd();
+   if((SAVE.codes&&SAVE.codes[CODE])&&!had){
+    SAVE.zenUnlocked=true;
+    try{saveSave()}catch(e){}
+    if(typeof toast==="function")toast("\u262f The Zen event awakens \u2014 calm settles over the garden!","good");
+   }
+   return r;
+  };
+
+ /* ---------- 2. SHARED PROGRESS ---------- */
+ function charmLv(){return Math.min(4,(SAVE.zenShop&&SAVE.zenShop.charm)||0)}
+ function dropChance(){return .06+.08*charmLv()}
+ function peaceCount(){var n=0,z=SAVE.zen||{};for(var k in z)if(z[k])n++;return n}
+ function zenTier(){var n=peaceCount();return n>=9?3:(n>=6?2:(n>=3?1:0))}
+ function zenTierCoin(){return [0,.05,.10,.15][zenTier()]}
+ function tierName(){var t=zenTier();return t>=3?"\ud83e\udd47 Transcendent":(t>=2?"\ud83e\udd48 Serene":(t>=1?"\ud83e\udd49 Peaceful":"Awakening"))}
+ function zenCost(d){return Math.round(150+((d&&d.rar)||0)*60)}
+
+ /* ---------- 3. ZEN-ONLY PLANT ---------- */
+ PLANTS[ZP]={name:"Zen Blossom",rar:4,cost:250,kind:"zenpulse",dmg:26,rate:1.6,rng:2.5,
+  desc:"A breathing bloom. Each pulse calms every foe nearby and softens their pace."};
+ if(PLANT_IDS.indexOf(ZP)<0)PLANT_IDS.push(ZP);
+ if(typeof NO_SHOP_PLANTS!=="undefined"&&NO_SHOP_PLANTS.indexOf(ZP)<0)NO_SHOP_PLANTS.push(ZP);
+ function ensureLoadout(id){
+  if(!Array.isArray(SAVE.loadout))SAVE.loadout=[];
+  if(SAVE.loadout.indexOf(id)>=0||SAVE.loadout.length>=5)return;
+  SAVE.loadout.push(id);
+ }
+
+ /* ---------- 4. ART: ZEN AURA + BLOSSOM ---------- */
+ function zenAura(x,id,s,t){
+  x.save();
+  x.globalCompositeOperation="lighter";
+  var rad=30*s;
+  var g=x.createRadialGradient(0,-2*s,2*s,0,-2*s,rad);
+  g.addColorStop(0,"rgba(180,240,214,.30)");
+  g.addColorStop(.55,"rgba(143,224,175,.12)");
+  g.addColorStop(1,"rgba(143,224,175,0)");
+  x.fillStyle=g;x.beginPath();x.arc(0,-2*s,rad,0,7);x.fill();
+  x.strokeStyle="rgba(255,216,107,.4)";x.lineWidth=1.6*s;
+  if(x.setLineDash)x.setLineDash([4*s,5*s]);
+  x.beginPath();x.arc(0,-2*s,23*s,t*.25,6.283+t*.25);x.stroke();
+  if(x.setLineDash)x.setLineDash([]);
+  for(var i=0;i<6;i++){
+   var a=t*1.3+i*(6.283/6);
+   x.save();x.translate(Math.cos(a)*19*s,Math.sin(a)*8.5*s-4*s);x.rotate(a+1.57);
+   x.fillStyle="rgba(255,224,150,.85)";
+   x.beginPath();x.moveTo(0,-2.8*s);x.quadraticCurveTo(3.2*s,0,0,2.8*s);x.quadraticCurveTo(-3.2*s,0,0,-2.8*s);x.fill();
+   x.restore();
   }
-return r;
+  for(var j=0;j<3;j++){
+   var a3=t*1.6+j*2.1;
+   x.fillStyle="rgba(233,255,242,.8)";
+   x.beginPath();x.arc(Math.cos(a3)*14*s,Math.sin(a3*1.35)*12*s-2*s,1.5*s,0,7);x.fill();
+  }
+  x.restore();
+ }
+ function blossomArt(x,s,t,lv){
+  var breath=Math.sin(t*1.6)*.5+.5;
+  x.save();
+  x.strokeStyle="#2a2016";x.lineWidth=2.2*s;x.lineCap="round";
+  x.beginPath();x.moveTo(0,12*s);x.quadraticCurveTo(-2*s,6*s,0,1*s);x.stroke();
+  x.fillStyle="#2f7a4a";x.beginPath();x.ellipse(-7*s,9*s,5.5*s,2.6*s,-.5,0,7);x.fill();x.stroke();
+  x.fillStyle="#3c9459";x.beginPath();x.ellipse(7*s,9.5*s,5.5*s,2.6*s,.5,0,7);x.fill();x.stroke();
+  var n=8,base=10*s+breath*2.4*s;
+  for(var i=0;i<n;i++){
+   var a=-Math.PI/2+(i-(n-1)/2)*.44;
+   x.save();x.rotate(a+Math.PI/2);
+   var g=x.createLinearGradient(0,0,0,-base);
+   g.addColorStop(0,"#dff5e6");g.addColorStop(1,"#8fd6a8");
+   x.fillStyle=g;x.strokeStyle="#2a2016";x.lineWidth=1.5*s;
+   x.beginPath();x.moveTo(0,0);
+   x.quadraticCurveTo(4.2*s,-base*.6,0,-base);
+   x.quadraticCurveTo(-4.2*s,-base*.6,0,0);x.fill();x.stroke();
+   x.restore();
+  }
+  x.fillStyle="#ffe9a8";x.strokeStyle="#b98b22";x.lineWidth=1.2*s;
+  x.beginPath();x.arc(0,0,3.6*s,0,7);x.fill();x.stroke();
+  if(lv>1){
+   for(var k=0;k<Math.min(lv,4);k++){
+    x.globalAlpha=.85;x.fillStyle="#ffd75e";x.strokeStyle="#5a3a00";x.lineWidth=.7;
+    x.beginPath();x.arc((k-1)*5*s,-15*s,1.7*s,0,7);x.fill();x.stroke();x.globalAlpha=1;
+   }
+  }
+  x.restore();
+ }
+ var _dpb=drawPlantBody;
+ drawPlantBody=function(x,id,s,ang,t,lv){
+  if(SAVE.zen&&SAVE.zen[id]){try{zenAura(x,id,s,t||0)}catch(e){}}
+  if(id===ZP){try{blossomArt(x,s,t||0,lv||1)}catch(e){}return}
+  return _dpb(x,id,s,ang,t,lv);
  };
- /* ---------- 1b. ZEN ACTION + EVENTS RIBBON (internal closuses use locked zenUnlocks) ---------- */
- function zCost(d){return Math.round(150+((d&&d.rar)||0)*60)}
+
+ /* ---------- 5. STATS + ABILITY ---------- */
+ var _so=statOf;
+ statOf=function(id){
+  var st=_so(id);
+  if(st&&(SAVE.zen&&SAVE.zen[id])){
+   if(st.dmg)st.dmg=Math.round(st.dmg*1.22);
+   if(st.amt)st.amt=Math.round(st.amt*1.22);
+   if(st.hp)st.hp=Math.round(st.hp*1.12);
+   if(st.admg)st.admg=st.admg+.03;
+  }
+  return st;
+ };
+ var _fp=firePlant;
+ firePlant=function(p,e,dt){
+  var def=PLANTS[p.id];
+  if(!def||def.kind!=="zenpulse")return _fp(p,e,dt);
+  var sb=sunBonus(p),mul=(p.mul||1)*(1+sb.dm),r=def.rng*64,any=false;
+  for(var en of G.enemies.slice()){
+   if(en.dead)continue;
+   if(dist2(p.x,p.y,en.x,en.y)>r*r)continue;
+   dealDmg(en,def.dmg*mul*(isTanky(en.k)?.8:1));
+   if(en.slows&&en.slows.length<6)en.slows.push({f:.6,t:2.2});
+   any=true;
+  }
+  if(any){
+   G.booms.push({x:p.x,y:p.y,r:26,life:.35,col:"#bff0d8"});
+   G.parts.push({x:p.x,y:p.y,vx:0,vy:-26,life:.5,col:"#dffae8",sz:5});
+   sound("shoot");
+  }
+ };
+  var _sl=startLevel;
+  startLevel=function(w,idx){if(hasPlant(ZP))ensureLoadout(ZP);return _sl(w,idx)};
+
+ /* ---------- 6. MUTATION ---------- */
  window.doZen=function(id){
-  if(!window.zenUnlocks||!zenUnlocks()){if(typeof toast==="function")toast("Zen settles on Oct 1, "+((SAVE&&SAVE.name)||"Gardener")+".","err");if(typeof sound==="function")sound("err");return}
+  if(!live()){toast("Zen settles on Oct 1, "+((SAVE&&SAVE.name)||"Gardener")+".","err");sound("err");return}
   var d=PLANTS[id];if(!d)return;
-  var c=zCost(d);
-  if((SAVE.sheck||0)<c){if(typeof toast==="function")toast("Not enough Sheckles!","err");if(typeof sound==="function")sound("err");return}
-  if(SAVE.zen&&SAVE.zen[id]){if(typeof toast==="function")toast(d.name+" is already at peace.","err");return}
+  var c=zenCost(d);
+  if(SAVE.zen&&SAVE.zen[id]){toast(d.name+" is already at peace.","err");return}
+  if((SAVE.sheck||0)<c){toast("Not enough Sheckles!","err");sound("err");return}
   SAVE.sheck-=c;SAVE.zen=SAVE.zen||{};SAVE.zen[id]=1;
   try{saveSave()}catch(e){}
-  if(typeof sound==="function")sound("summon");
-  if(typeof toast==="function")toast(d.name+" has been Zen-Mutated \u2014 calm blooms grow stronger!","good");
-  refreshBals();renderEnchant();
+  sound("summon");
+  toast(d.name+" has been Zen-Mutated \u2014 calm blooms grow stronger!","good");
+  refreshBals();if(typeof renderZen==="function")renderZen();if(typeof renderEnchant==="function")renderEnchant();
  };
- function fixZenRibbon(){
-  var rib=document.querySelector("#evContent .newsRib");
-  if(!rib)return;
-  var live=window.zenUnlocks?zenUnlocks():false;
-  var b=rib.querySelector("b");
-  if(b)b.textContent=live?"ZEN EVENT \u2014 LIVE \u2605":"ZEN EVENT \u2014 COMING OCT 1";
-  var s=rib.querySelector("span:nth-of-type(2)");
-  if(s)s.textContent=live?"The garden has settled into calm \u2014 Zen-Mutate at the Enchanter.":"";
-}
- var _oev=window.openEvents;
- window.openEvents=function(){var r=_oev?_oev():undefined;fixZenRibbon();return r};
- var _rq=window.renderQuests;
- window.renderQuests=function(){var r=_rq?_rq():undefined;fixZenRibbon();return r};
- var _rw=window.renderRewards;
- window.renderRewards=function(){var r=_rw?_rw():undefined;fixZenRibbon();return r};
- /* ---------- 2. ZEN SECTION INSIDE THE ENCHANTER ---------- */
- function zCost2(d){return Math.round(150+((d&&d.rar)||0)*60)}
- function zenEnchantChrome(){
-  var scr=document.getElementById("scr-enchant");
-  if(!scr||scr.querySelector("#zenSect"))return;
-  var live=window.zenUnlocks?zenUnlocks():false;
-  var sect=document.createElement("div");sect.id="zenSect";sect.className="zenSect"+(live?" live":"");
-  sect.innerHTML='<div class="zsHead"><span class="zsIco">\u262f</span>'
-   +'<div class="zsInfo"><b>'+(live?"ZEN EVENT \u00b7 LIVE":"ZEN MUTATIONS")+'</b>'
-   +'<span>'+(live?"A peaceful mutation settled over the garden \u2014 zen plants harvest calmer and hit harder.":"The garden stirs toward peace \u2014 find the vault pass-code to wake it early.")+'</span></div>'
-   +'<span class="'+(live?"zsLive":"zsComing")+'">'+(live?"LIVE":"OCT 1")+'</span></div>'
-   +'<div id="zenGrid"></div>';
-  var grid=document.getElementById("enGrid");
-  if(grid&&grid.parentNode)grid.parentNode.appendChild(sect);
-  else scr.appendChild(sect);
-  zenEnchantFill(live);
- }
- function zenEnchantFill(force){
-  var grid=document.getElementById("zenGrid");if(!grid)return;
-  var live=force!==undefined?force:(window.zenUnlocks?zenUnlocks():false);
-  grid.innerHTML="";
-  var sect=document.getElementById("zenSect");
-  if(sect)sect.className="zenSect"+(live?" live":"");
-  if(!live){
-   grid.innerHTML='<div class="zenTease"><div class="cii">\u262f</div>'
-    +'<div><b>ZEN EVENT \u00b7 COMING SOON</b><br>'
-    +'<span style="font-size:12px;color:var(--dim)">A peaceful mutation settles over the garden \u2014 zen plants harvest calmer and hit harder. Only the vault pass-code can wake it early.</span></div>'
-    +'<span class="zsComing">sleeps</span></div>';
-   return;
-  }
-  var ids=Object.keys(SAVE.plants||{});
-  if(!ids.length){grid.innerHTML='<div class="zenEmpty">No plants yet \u2014 win some stages and return to Zen-Mutate them.</div>';return}
-  ids.forEach(function(id){
-   var d=PLANTS[id];if(!d)return;
-   var zen=!!(SAVE.zen&&SAVE.zen[id]),cost=zCost(d);
-   var card=document.createElement("div");card.className="zenCard"+(zen?" done":"");
-   card.innerHTML='<div class="zenIconSlot"></div><b>'+d.name+'</b>'
-    +'<span class="pillZen">'+(zen?"\u2713 AT PEACE":"\u262f "+cost+" S")+'</span>'
-    +'<div style="font-size:11px;color:#aee8a0">'+(zen?"+22% stats \u00b7 calm":"+22% stats \u00b7 calm")+'</div>'
-    +'<button class="btn small" '+((zen||(SAVE.sheck||0)<cost)?"disabled":"")+' onclick="doZen(\''+id+'\')">'+(zen?"Zen\u2019d":"Zen-Mutate")+'</button>'
-    +((zen)?"<span class=\"zenMark\">\u2713</span>":"");
-   var slot=card.querySelector(".zenIconSlot");
-   if(slot)slot.appendChild(makeIcon(id,80));
-   grid.appendChild(card);
-  });
- }
- var _oe=openEnchant;
- openEnchant=function(){var r=_oe?_oe():undefined;zenEnchantChrome();return r};
- var _re=renderEnchant;
- renderEnchant=function(){var r=_re?_re():undefined;if(document.getElementById("zenGrid"))zenEnchantFill();return r};
- window.GG_OCT3=true;
-})();
-/* ===== OCT4: ZEN EVENT UPGRADE — PETALS, ZEN GARDEN, SHOP, RANKS, CTAs ===== */
-(function(){
- "use strict";
- SAVE.stats=SAVE.stats||{};SAVE.zenShop=SAVE.zenShop||{};SAVE.petals=SAVE.petals||0;
- function ZenOn(){return !!(SAVE.zenUnlocked||(window.zenUnlocks&&zenUnlocks()));}
- function charmLv(){return Math.min(4,(SAVE.zenShop&&SAVE.zenShop.charm)||0);}
- function dropChance(){return 0.06+0.08*charmLv();}
- function peaceCount(){var n=0,z=SAVE.zen||{};for(var k in z)if(z[k])n++;return n;}
- function zenTier(){var n=peaceCount();return n>=9?3:(n>=6?2:(n>=3?1:0));}
- function zenTierCoin(){return [0,.05,.10,.15][zenTier()];}
- function tierName(){var t=zenTier();return t>=3?"\ud83e\udd47 Transcendent":(t>=2?"\ud83e\udd48 Serene":(t>=1?"\ud83e\udd49 Peaceful":"Awakening"));}
- /* ---------- 1. BATTLE: PETAL DROPS + CALM COIN GLIMMER ---------- */
- var _ke=killEnemy;
- killEnemy=function(e){
-  _ke(e);
-  if(!(e&&e.dead))return;
-  if(ZenOn()&&Math.random()<dropChance()){
+
+ /* ---------- 7. PETAL DROPS ---------- */
+  var _ke=killEnemy;
+  killEnemy=function(e){
+   if(!e||e.dead){if(_ke)_ke(e);return}
+   _ke(e);
+   if(!live())return;
+  if(Math.random()<dropChance()){
    SAVE.petals=(SAVE.petals||0)+1;SAVE.stats.petals=(SAVE.stats.petals||0)+1;
    var b=zenTierCoin();
-   if(b>0&&G){var v=Math.round(e.reward*b);if(v>0){G.sheck+=v;G.earned+=v;SAVE.stats.sheckEarned+=v;}}
+   if(b>0&&G){var v=Math.round((e.reward||0)*b);if(v>0){G.sheck+=v;G.earned+=v;SAVE.stats.sheckEarned+=v}}
    if(G&&G.texts)G.texts.push({x:e.x,y:e.y-30,txt:"\u273f +1",col:"#c9f0d8",life:1.2});
   }
  };
- /* ---------- 2. HUD PETAL PILL ---------- */
- (function(){
-  var hud=document.getElementById("hud");
-  if(!hud)return;
-  var p=document.createElement("span");p.id="petalPill";p.className="pill";
-  p.style.color="#c9f0d8";p.innerHTML="\u273f 0";p.style.display="none";
-  hud.appendChild(p);
- })();
  var _rb=refreshBals;
  refreshBals=function(){
   _rb();
   var p=document.getElementById("petalPill");
-  if(p){var on=ZenOn();p.style.display=on?"inline-block":"none";if(on)p.innerHTML="\u273f "+fmt(SAVE.petals||0);}
+  if(p){var on=live();p.style.display=on?"inline-block":"none";if(on)p.innerHTML="\u273f "+fmt(SAVE.petals||0)}
+  var hp=document.getElementById("zenPetalBal");
+  if(hp)hp.textContent="\u273f "+(typeof fmt==="function"?fmt(SAVE.petals||0):SAVE.petals||0);
  };
- /* ---------- 3. ZEN GARDEN SCREEN ---------- */
- var ZEN_ITEMS=[
-  {id:"charm",n:"\u273f Charm of Calm",tag:"petal +8%",d:"Permanently raise Zen Petal drop chance. One of four keepsakes.",repeat:false},
-  {id:"fountain",n:"\ud83d\udca7 Zen Fountain",tag:"repeat",d:"Offer 100 petals to the fountain \u2014 it returns 400 Sheckles.",repeat:true,cost:100,prize:{sheck:400}},
-  {id:"bloom",n:"\ud83c\udf3b Bloom Ritual",tag:"repeat",d:"Trade 250 petals for 25 Gems. A bloom in the night garden.",repeat:true,cost:250,prize:{gems:25}},
-  {id:"tiers",n:"\ud83c\udfc5 Determination",tag:"peace ranks",d:"3 / 6 / 9 plants at peace turn +5 / +10 / +15 of each reward into calm coins.",repeat:false}
+ (function(){
+  var hud=document.getElementById("hud");if(!hud||hud.querySelector("#petalPill"))return;
+  var p=document.createElement("span");p.id="petalPill";p.className="pill";
+  p.style.color="#c9f0d8";p.textContent="\u273f 0";p.style.display="none";hud.appendChild(p);
+ })();
+
+ /* ---------- 8. ZEN GARDEN + SHOP ---------- */
+ var SHOP=[
+  {id:"zplant",n:"\u273f Zen Blossom",tag:"event plant",d:"Awaken the event's own bloom. A calm pulse that damages and slows every foe in range."},
+  {id:"charm",n:"\u273f Charm of Calm",tag:"keepsake",d:"Permanently raise Zen Petal drop chance. One of four keepsakes."},
+  {id:"fountain",n:"\ud83d\udca7 Zen Fountain",tag:"repeat",d:"Offer 100 petals to the fountain \u2014 it returns 400 Sheckles."},
+  {id:"bloom",n:"\ud83c\udf3b Bloom Ritual",tag:"repeat",d:"Trade 250 petals for 25 Gems. A bloom in the night garden."},
+  {id:"tiers",n:"\ud83c\udfc5 Determination",tag:"peace ranks",d:"3 / 6 / 9 plants at peace turn +5 / +10 / +15 of each reward into calm coins."}
  ];
- function charmCost(){return 30+25*charmLv();}
- function openZen(){
-  if(!ZenOn()){if(typeof toast==="function")toast("\u262f The Zen Garden opens when the event is live.","err");return}
-  var el=document.getElementById("scr-zen");
-  if(!el){el=document.createElement("div");el.className="screen";el.id="scr-zen";document.body.appendChild(el);}
-  el.innerHTML='<div class="topbar"><button class="btn small ghost" id="zenBack">\u2190 Home</button><b>\u262f Zen Garden</b><span class="pill zenPetalPill" id="zenPetalBal">\u273f 0</span></div>'
-   +'<div class="zenPage"><div class="petalRain"></div>'
-   +'<div class="zpHero"><span class="zsIco">\u262f</span><div><b>THE GARDEN IS AT PEACE</b><div style="font-size:13px;color:var(--dim)">Defeat foes in battle for a chance at a \u273f Zen Petal \u2014 then spend them here, or settle your plants at peace.</div></div><span class="zsLive">LIVE</span></div>'
-   +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 2px">'
-   +'<span class="pill zenMeta">plants at peace <b>'+peaceCount()+'</b></span>'
-   +'<span class="pill zenMeta">determination <b>'+tierName()+'</b></span>'
-   +'<span class="pill zenMeta">petals &rarr; coins <b>+'+Math.round(zenTierCoin()*100)+'%</b></span>'
-   +'<span class="pill zenMeta">drop chance <b>'+Math.round(dropChance()*100)+'%</b></span>'
-   +'</div>'
-   +'<div class="zpSec"><div class="zpSecT">\u262f GARDEN AT PEACE</div><div id="zenPeaceGrid" class="zenPeaceGrid"></div></div>'
-   +'<div class="zpSec"><div class="zpSecT">\u273f PETAL SHOP</div><div id="zenShopGrid" class="zenShopGrid"></div></div>'
-   +'<div class="zpSec"><div class="zpSecT">\u2726 HOW TO EARN</div><div class="zpHow">Every foe defeated in battle carries a chance at a \u273f Zen Petal. The <b>Charm of Calm</b> raises your drop chance (+8% per keepsake), and every plant at peace adds <b>+22% power</b> while raising your <b>petal-to-coin</b> glimmer.</div></div>'
-   +'</div>';
-  document.getElementById("zenBack").onclick=function(){if(typeof goHub==="function")goHub()};
-  show("scr-zen");renderZen();refreshBals();
- }
- function renderZen(){
-  var p=document.getElementById("zenPetalBal");
-  if(p)p.textContent="\u273f "+(fmt?fmt(SAVE.petals||0):SAVE.petals||0);
-  var pg=document.getElementById("zenPeaceGrid"),ids=Object.keys(SAVE.plants||{}),shown=0;
-  if(pg){
-   pg.innerHTML="";
-   ids.forEach(function(id){
-    if(!(SAVE.zen&&SAVE.zen[id]))return;
-    var d=PLANTS[id];if(!d)return;shown++;
-    var c=document.createElement("div");c.className="zenPeaceCard";
-    c.innerHTML='<div class="zpIco"></div><b>'+d.name+'</b><span>\u262f at peace \u00b7 +22% power</span>';
-    var s=c.querySelector(".zpIco");if(s)s.appendChild(makeIcon(id,52));
-    pg.appendChild(c);
-   });
-   if(!shown)pg.innerHTML='<div style="color:var(--dim);font-size:13px;grid-column:1/-1;padding:12px">No plants at peace yet \u2014 open the Enchanter and Zen-Mutate one.</div>';
-  }
-  var sg=document.getElementById("zenShopGrid");
-  if(sg){
-   sg.innerHTML="";
-   ZEN_ITEMS.forEach(function(it){
-    var card=document.createElement("div");card.className="zenShopCard";
-    var body='<span class="zTag">'+it.tag+'</span><span class="zItem">'+it.n+'</span><span class="zD">'+it.d+'</span>';
-    if(it.id==="charm"){
-     var lv=charmLv();
-     body+='<span class="zCost">\u273f '+charmCost()+' \u00b7 keepsakes '+lv+'/4</span>';
-     body+='<button class="btn gold small" '+((lv>=4||(SAVE.petals||0)<charmCost())?"disabled":"")+' onclick="zenShopBuy(\'charm\')">'+(lv>=4?"Cherished \u2713":"Charm")+'</button>';
-    }else if(it.id==="tiers"){
-     var t=zenTier();
-     body+='<span class="zCost">'+(t>=3?"\ud83e\udd47 MAX":(t>=1?"current "+tierName():"next rank at 3 plants"))+'</span>';
-     body+='<button class="btn small" disabled>'+tierName()+'</button>';
-    }else{
-     var en=(SAVE.petals||0)<it.cost;
-     body+='<span class="zCost">\u273f '+it.cost+'</span>';
-     body+='<button class="btn gold small" '+(en?"disabled":"")+' onclick="zenShopBuy(\''+it.id+'\')">Buy</button>';
-    }
-    card.innerHTML=body;
-    sg.appendChild(card);
-   });
-  }
- }
- window.zenShopBuy=function(id){
-  if(!ZenOn()){if(typeof toast==="function")toast("\u262f Zen is not live.","err");return}
-  var p=SAVE.petals||0;
-  if(id==="charm"){
-   var lv=charmLv();if(lv>=4){toast("You have all four keepsakes.","err");return}
-   var c=charmCost();
-   if(p<c){toast("Not enough Zen Petals!","err");if(typeof sound==="function")sound("err");return}
-   SAVE.petals=p-c;SAVE.zenShop.charm=lv+1;
-   toast("\u273f A Charm of Calm settles into your pocket \u2014 petals come easier now.","good");
-  }else if(id==="fountain"){
-   if(p<100){toast("Need 100 petals.","err");return}
-   SAVE.petals=p-100;SAVE.sheck=(SAVE.sheck||0)+400;
-   toast("\ud83d\udca7 The fountain glimmers \u2014 +400 Sheckles.","good");
-  }else if(id==="bloom"){
-   if(p<250){toast("Need 250 petals.","err");return}
-   SAVE.petals=p-250;SAVE.gems=(SAVE.gems||0)+25;
-   toast("\ud83c\udf3b A bloom unfolds \u2014 +25 Gems.","good");
-  }else return;
-  try{saveSave()}catch(e){}
-  if(typeof sound==="function")sound("summon");
-  refreshBals();renderZen();if(typeof renderEnchant==="function")renderEnchant();
- };
+ function charmCost(){return 30+25*charmLv()}
+ function zplantCost(){return 600}
  function petalRain(el){
   if(!el||el.querySelector("span"))return;
   for(var i=0;i<12;i++){
@@ -4041,88 +3915,374 @@ return r;
    el.appendChild(s);
   }
  }
- window.openZen=openZen;window.zenPetals=function(){return SAVE.petals||0};
- /* ---------- 4. CTAs: HUB + ENCHANTER + EVENTS ---------- */
- var _gh=goHub;
- goHub=function(){var r=_gh?_gh():undefined;hubZenCta();return r};
- function hubZenCta(){
-  var spot=document.querySelector("#scr-hub .hubZenSpot");
-  if(!spot||(spot.className||"").indexOf("live")<0)return;
-  if(spot.getAttribute("data-zencta"))return;
-  spot.setAttribute("data-zencta","1");
-  var btn=document.createElement("button");btn.className="btn small gold zenGardenBtn";btn.style.marginLeft="6px";
-  btn.style.flex="0 0 auto";btn.textContent="\u262f Zen Garden";
-  btn.onclick=function(){openZen()};
-  spot.appendChild(btn);
- }
- var _oe3=openEnchant;
- openEnchant=function(){var r=_oe3?_oe3():undefined;enchanterZenCta();return r};
- function enchanterZenCta(){
-  if(!ZenOn())return;
-  var head=document.querySelector("#scr-enchant .zenSect.live .zsHead");
-  if(!head||head.querySelector(".zenGardenBtn"))return;
-  var b=document.createElement("button");b.className="btn small gold zenGardenBtn";b.textContent="\u262f Garden";
-  b.onclick=function(){openZen()};
-  head.appendChild(b);
- }
- var _oev2=openEvents;
- openEvents=function(){var r=_oev2?_oev2():undefined;eventsZenCta();return r};
- function eventsZenCta(){
-  if(!ZenOn())return;
-  var rib=document.querySelector("#evContent .newsRib");
-  if(!rib||rib.querySelector(".zenGardenBtn"))return;
-  var b=document.createElement("button");b.className="btn small gold zenGardenBtn";b.textContent="\u262f Zen Garden";
-  b.onclick=function(){openZen()};
-  rib.appendChild(b);
- }
- /* ---------- 5. PETAL RAIN ON EVENTS + ZEN SCREEN ---------- */
- var _rz=renderZen;
- renderZen=function(){var r=_rz?_rz():undefined;var pr=document.querySelector("#scr-zen .petalRain");if(pr)petalRain(pr);return r};
- var _rez=renderEvents;
- renderEvents=function(){var r=_rez?_rez():undefined;var pr=document.querySelector("#scr-zen .petalRain");if(pr)petalRain(pr);return r};
- window.GG_OCT4=true;
-})();
-/* ===== OCT5: ZEN PLANT AURA EFFECT IN BATTLE + EVERY ICON ===== */
-(function(){
- "use strict";
- /* ---------- 1. ZEN AURA DRAWN UNDER EVERY ZEN PLANT ---------- */
- function zenAura(x,id,s,t){
-  x.save();
-  x.globalCompositeOperation="lighter";
-  var tt=(t&&!isNaN(t))?(+t):0;
-  var rad=30*s;
-  var g=x.createRadialGradient(0,-2*s,2*s,0,-2*s,rad);
-  g.addColorStop(0,"rgba(180,240,214,.30)");
-  g.addColorStop(.55,"rgba(143,224,175,.12)");
-  g.addColorStop(1,"rgba(143,224,175,0)");
-  x.fillStyle=g;x.beginPath();x.arc(0,-2*s,rad,0,7);x.fill();
-  x.strokeStyle="rgba(255,216,107,.4)";x.lineWidth=1.6*s;
-  if(x.setLineDash)x.setLineDash([4*s,5*s]);
-  x.beginPath();x.arc(0,-2*s,23*s,tt*.25,6.283+tt*.25);x.stroke();
-  if(x.setLineDash)x.setLineDash([]);
-  var n=6;
-  for(var i=0;i<n;i++){
-   var a2=tt*1.3+i*(6.283/n);
-   var px=Math.cos(a2)*19*s,py=Math.sin(a2)*8.5*s-4*s;
-   x.save();x.translate(px,py);x.rotate(a2+1.57);
-   x.fillStyle="rgba(255,224,150,.85)";
-   x.beginPath();x.moveTo(0,-2.8*s);x.quadraticCurveTo(3.2*s,0,0,2.8*s);x.quadraticCurveTo(-3.2*s,0,0,-2.8*s);x.fill();
-   x.restore();
-  }
-  for(var j=0;j<3;j++){
-   var a3=tt*1.6+j*2.1;
-   var sx=Math.cos(a3)*14*s,sy=Math.sin(a3*1.35)*12*s-2*s;
-   x.fillStyle="rgba(233,255,242,.8)";
-   x.beginPath();x.arc(sx,sy,1.5*s,0,7);x.fill();
-  }
-  x.restore();
- }
- var _dp5=drawPlantBody;
- drawPlantBody=function(x,id,s,ang,t,lv){
-  if(SAVE.zen&&SAVE.zen[id]){try{zenAura(x,id,s,t||0)}catch(e){}}
-  return _dp5(x,id,s,ang,t,lv);
+ function themeOn(){return live()&&SAVE.zenTheme!==false}
+ window.toggleZenTheme=function(){
+  SAVE.zenTheme=!themeOn();
+  try{saveSave()}catch(e){}
+  toast(themeOn()?"\u262f The garden settles into peace.":"The calm fades from the board.",themeOn()?"good":"");
+  if(typeof renderZen==="function")renderZen();
  };
- /* ---------- 2. TITLE SCREEN FLOATING PETALS ---------- */
+ function renderShop(sg){
+  sg.innerHTML="";
+  SHOP.forEach(function(it){
+   var card=document.createElement("div");card.className="zenShopCard";
+   var body='<span class="zTag">'+it.tag+'</span><span class="zItem">'+it.n+'</span><span class="zD">'+it.d+'</span>';
+   if(it.id==="zplant"){
+    var owned=hasPlant(ZP);
+    body+='<span class="zCost">'+(owned?"\u2713 awakened":"\u273f "+zplantCost())+'</span>';
+    body+='<button class="btn gold small" '+((owned||(SAVE.petals||0)<zplantCost())?"disabled":"")+' onclick="zenShopBuy(\'zplant\')">'+(owned?"Owned \u2713":"Awaken")+'</button>';
+   }else if(it.id==="charm"){
+    var lv=charmLv();
+    body+='<span class="zCost">\u273f '+charmCost()+' \u00b7 keepsakes '+lv+'/4</span>';
+    body+='<button class="btn gold small" '+((lv>=4||(SAVE.petals||0)<charmCost())?"disabled":"")+' onclick="zenShopBuy(\'charm\')">'+(lv>=4?"Cherished \u2713":"Charm")+'</button>';
+   }else if(it.id==="tiers"){
+    var t=zenTier();
+    body+='<span class="zCost">'+(t>=3?"\ud83e\udd47 MAX":(t>=1?"current "+tierName():"next rank at 3 plants"))+'</span>';
+    body+='<button class="btn small" disabled>'+tierName()+'</button>';
+   }else{
+    var en=(SAVE.petals||0)<it.cost;
+    body+='<span class="zCost">\u273f '+it.cost+'</span>';
+    body+='<button class="btn gold small" '+(en?"disabled":"")+' onclick="zenShopBuy(\''+it.id+'\')">Buy</button>';
+   }
+   card.innerHTML=body;
+   sg.appendChild(card);
+  });
+ }
+ function medCooldown(){
+  var left=120000-(Date.now()-(SAVE.zenMeditate||0));
+  return left>0?Math.ceil(left/1000):0;
+ }
+ var MED={raf:0,running:false};
+ function stopMeditation(){
+  if(MED.raf){try{cancelAnimationFrame(MED.raf)}catch(e){}}
+  MED.raf=0;MED.running=false;
+ }
+ window.startMeditation=function(){
+  if(!live()){toast("\u262f The Zen Garden opens when the event is live.","err");return}
+  var cd=medCooldown();
+  if(cd>0){toast("Your breathing settles in "+cd+"s.",  "err");sound("err");return}
+  var wrap=document.getElementById("zenMedWrap");if(!wrap)return;
+  stopMeditation();
+  wrap.innerHTML='<canvas id="zenMedCv" width="300" height="300"></canvas>'
+   +'<div class="zenMedHint">Tap when the drifting ring meets the calm ring. Three breaths.</div>'
+   +'<div class="zenMedScore" id="zenMedScore">breath 1 of 3</div>'
+   +'<button class="btn small ghost" id="zenMedQuit">Leave</button>';
+  var cv=document.getElementById("zenMedCv");
+  var x=cv.getContext("2d"),score=document.getElementById("zenMedScore");
+  var quit=document.getElementById("zenMedQuit");
+  MED.running=true;
+   var round=0,hits=0,target=100,tol=14,r=48,dir=1,last=performance.now(),flash=0;
+  function drawMed(){
+   x.clearRect(0,0,300,300);
+   x.strokeStyle="rgba(143,224,175,.35)";x.lineWidth=2;
+   x.beginPath();x.arc(150,150,target,0,7);x.stroke();
+   x.strokeStyle="rgba(143,224,175,.13)";x.lineWidth=10;
+   x.beginPath();x.arc(150,150,target,0,7);x.stroke();
+   var rr=r,col=Math.abs(r-target)<=tol?"#9ff0bd":"#d8f0e2";
+   x.strokeStyle=col;x.lineWidth=5;
+   x.beginPath();x.arc(150,150,rr,0,7);x.stroke();
+   if(flash>0){
+    x.strokeStyle="rgba(255,233,168,"+flash.toFixed(2)+")";x.lineWidth=7;
+    x.beginPath();x.arc(150,150,target,0,7);x.stroke();
+   }
+   x.fillStyle="rgba(233,255,242,.9)";x.font="bold 13px Trebuchet MS";x.textAlign="center";
+   x.fillText(round+"/3",150,155);
+  }
+  function frame(now){
+   if(!MED.running)return;
+   var dt=Math.min(.05,(now-last)/1000);last=now;
+   if(flash>0)flash-=dt*1.6;
+   if(round<3){
+    r+=dir*60*dt;
+    if(r>132){r=132;dir=-1}
+    if(r<48){r=48;dir=1}
+   }
+   drawMed();
+   MED.raf=requestAnimationFrame(frame);
+  }
+  function finish(){
+   stopMeditation();
+   var pet=Math.max(1,Math.round(hits*3));
+   SAVE.petals=(SAVE.petals||0)+pet;SAVE.stats.petals=(SAVE.stats.petals||0)+pet;
+   SAVE.zenMeditate=Date.now();
+   try{saveSave()}catch(e){}
+   sound("summon");
+   toast("\u262f "+hits+" calm breath"+(hits===1?"":"s")+" \u2014 +"+pet+" Zen Petals.","good");
+   renderZen();
+  }
+  function tap(){
+   if(!MED.running)return;
+   if(round>=3)return;
+   if(Math.abs(r-target)<=tol){
+    round++;hits++;flash=1;sound("coin");
+    score.textContent=round>=3?"the garden is still":"breath "+(round+1)+" of 3";
+   }else{
+    sound("err");
+    score.textContent="not yet \u00b7 breath "+(round+1)+" of 3";
+   }
+   if(round>=3)finish();
+  }
+  cv.onclick=tap;
+  quit.onclick=function(){stopMeditation();renderZen()};
+  drawMed();
+  MED.raf=requestAnimationFrame(frame);
+ };
+ function renderZen(){
+  var p=document.getElementById("zenPetalBal");
+  if(p)p.textContent="\u273f "+(typeof fmt==="function"?fmt(SAVE.petals||0):SAVE.petals||0);
+  var pg=document.getElementById("zenPeaceGrid"),shown=0;
+  if(pg){
+   pg.innerHTML="";
+   Object.keys(SAVE.plants||{}).forEach(function(id){
+    if(!(SAVE.zen&&SAVE.zen[id]))return;
+    var d=PLANTS[id];if(!d)return;shown++;
+    var c=document.createElement("div");c.className="zenPeaceCard";
+    c.innerHTML='<div class="zpIco"></div><b>'+d.name+'</b><span>\u262f at peace \u00b7 +22% power</span>';
+    var s=c.querySelector(".zpIco");if(s)s.appendChild(makeIcon(id,52));
+    pg.appendChild(c);
+   });
+   if(!shown)pg.innerHTML='<div style="color:var(--dim);font-size:13px;grid-column:1/-1;padding:12px">No plants at peace yet \u2014 open the Enchanter and Zen-Mutate one.</div>';
+  }
+  var sg=document.getElementById("zenShopGrid");if(sg)renderShop(sg);
+   var th=document.getElementById("zenThemeRow");
+  if(th)th.innerHTML='<span class="zTag">cosmetic</span><span class="zItem">Peaceful Board</span>'
+   +'<span class="zD">A calm green wash and drifting petals over the battlefield while zen plants hold the line.</span>'
+   +'<span class="zCost">'+(themeOn()?"on":"off")+'</span>'
+   +'<button class="btn small" onclick="toggleZenTheme()">'+(themeOn()?"Turn off":"Turn on")+'</button>';
+  var cd=medCooldown();
+  var md=document.getElementById("zenMedWrap");
+  if(md&&!MED.running){
+   md.innerHTML='<div class="zenMedHint">Three calm breaths, timed to the ring. Earn up to 9 Zen Petals.</div>'
+    +'<button class="btn gold small" '+(cd>0?"disabled":"")+' onclick="startMeditation()">'+(cd>0?"Settling \u00b7 "+cd+"s":"Begin meditation")+'</button>';
+  }
+  var pr=document.querySelector("#scr-zen .petalRain");if(pr)petalRain(pr);
+ }
+ window.renderZen=renderZen;
+ window.openZen=function(){
+  if(!live()){toast("\u262f The Zen Garden opens when the event is live.","err");return}
+  var el=document.getElementById("scr-zen");
+  if(!el){el=document.createElement("div");el.className="screen";el.id="scr-zen";document.body.appendChild(el)}
+  el.innerHTML='<div class="topbar"><button class="btn small ghost" id="zenBack">\u2190 Home</button><b>\u262f Zen Garden</b><span class="pill zenPetalPill" id="zenPetalBal">\u273f 0</span></div>'
+   +'<div class="zenPage"><div class="petalRain"></div>'
+   +'<div class="zpHero"><span class="zsIco">\u262f</span><div><b>THE GARDEN IS AT PEACE</b><div style="font-size:13px;color:var(--dim)">Defeat foes in battle for a chance at a \u273f Zen Petal \u2014 then spend them here, or settle your plants at peace.</div></div><span class="zsLive">LIVE</span></div>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 2px">'
+   +'<span class="pill zenMeta">plants at peace <b>'+peaceCount()+'</b></span>'
+   +'<span class="pill zenMeta">determination <b>'+tierName()+'</b></span>'
+   +'<span class="pill zenMeta">petals \u2192 coins <b>+'+Math.round(zenTierCoin()*100)+'%</b></span>'
+   +'<span class="pill zenMeta">drop chance <b>'+Math.round(dropChance()*100)+'%</b></span>'
+   +'</div>'
+    +'<div class="zpSec"><div class="zpSecT">\u2726 MEDITATION</div><div class="zenMedWrap" id="zenMedWrap"></div></div>'
+    +'<div class="zpSec"><div class="zpSecT">\u2696 THE BATTLEFIELD</div><div class="zenShopCard" id="zenThemeRow"></div></div>'
+    +'<div class="zpSec"><div class="zpSecT">\u262f GARDEN AT PEACE</div><div id="zenPeaceGrid" class="zenPeaceGrid"></div></div>'
+   +'<div class="zpSec"><div class="zpSecT">\u273f PETAL SHOP</div><div id="zenShopGrid" class="zenShopGrid"></div></div>'
+   +'<div class="zpSec"><div class="zpSecT">\u2726 HOW TO EARN</div><div class="zenHow">Every foe defeated in battle carries a chance at a \u273f Zen Petal. The <b>Charm of Calm</b> raises your drop chance (+8% per keepsake), and every plant at peace adds <b>+22% power</b> while raising your <b>petal-to-coin</b> glimmer. <b>Meditation</b> pays out on its own.</div></div>'
+   +'</div>';
+  document.getElementById("zenBack").onclick=function(){stopMeditation();if(typeof goHub==="function")goHub()};
+  show("scr-zen");renderZen();refreshBals();
+ };
+ window.zenShopBuy=function(id){
+  if(!live()){toast("\u262f Zen is not live.","err");return}
+  var p=SAVE.petals||0;
+  if(id==="charm"){
+   var lv=charmLv();if(lv>=4){toast("You have all four keepsakes.","err");return}
+   var c=charmCost();
+   if(p<c){toast("Not enough Zen Petals!","err");sound("err");return}
+   SAVE.petals=p-c;SAVE.zenShop.charm=lv+1;
+   toast("\u273f A Charm of Calm settles into your pocket \u2014 petals come easier now.","good");
+  }else if(id==="fountain"){
+   if(p<100){toast("Need 100 petals.","err");return}
+   SAVE.petals=p-100;SAVE.sheck=(SAVE.sheck||0)+400;
+   toast("\ud83d\udca7 The fountain glimmers \u2014 +400 Sheckles.","good");
+  }else if(id==="bloom"){
+   if(p<250){toast("Need 250 petals.","err");return}
+   SAVE.petals=p-250;SAVE.gems=(SAVE.gems||0)+25;
+   toast("\ud83c\udf3b A bloom unfolds \u2014 +25 Gems.","good");
+  }else if(id==="zplant"){
+   if(hasPlant(ZP)){toast("The Zen Blossom already blooms for you.","err");return}
+   var zc=zplantCost();
+   if(p<zc){toast("Need "+zc+" Zen Petals to awaken it.","err");return}
+   SAVE.petals=p-zc;SAVE.plants[ZP]={lv:1};SAVE.zen=SAVE.zen||{};SAVE.zen[ZP]=1;
+   if(Array.isArray(SAVE.loadout)&&SAVE.loadout.indexOf(ZP)<0&&SAVE.loadout.length<5)SAVE.loadout.push(ZP);
+   toast("\u273f The Zen Blossom opens \u2014 it is already at peace.","good");
+  }else return;
+  try{saveSave()}catch(e){}
+  sound("summon");
+  refreshBals();renderZen();
+  if(typeof renderEnchant==="function")renderEnchant();
+ };
+ window.zenPetals=function(){return SAVE.petals||0};
+
+ /* ---------- 9. ENCHANTER ZEN SECTION ---------- */
+ function zenSection(){
+  var scr=document.getElementById("scr-enchant");
+  if(!scr||scr.querySelector("#zenSect"))return;
+  var on=live();
+  var sect=document.createElement("div");sect.id="zenSect";sect.className="zenSect"+(on?" live":"");
+  sect.innerHTML='<div class="zsHead"><span class="zsIco">\u262f</span>'
+   +'<div class="zsInfo"><b>'+(on?"ZEN EVENT \u00b7 LIVE":"ZEN MUTATIONS")+'</b>'
+   +'<span>'+(on?"A peaceful mutation settled over the garden \u2014 zen plants harvest calmer and hit harder.":"The garden stirs toward peace \u2014 find the vault pass-code to wake it early.")+'</span></div>'
+   +'<span class="'+(on?"zsLive":"zsComing")+'">'+(on?"LIVE":"OCT 1")+'</span></div>'
+   +'<div id="zenGrid"></div>';
+  var grid=document.getElementById("enGrid");
+  if(grid&&grid.parentNode)grid.parentNode.insertBefore(sect,grid.nextSibling);
+  else scr.appendChild(sect);
+  zenFill();
+  if(on){
+   var head=sect.querySelector(".zsHead");
+   if(head&&!head.querySelector(".zenGardenBtn")){
+    var b=document.createElement("button");b.className="btn small gold zenGardenBtn";b.textContent="\u262f Garden";
+    b.onclick=function(){openZen()};
+    head.appendChild(b);
+   }
+  }
+ }
+ function zenFill(){
+  var grid=document.getElementById("zenGrid");if(!grid)return;
+  var on=live();
+  grid.innerHTML="";
+  var sect=document.getElementById("zenSect");
+  if(sect)sect.className="zenSect"+(on?" live":"");
+  if(!on){
+   grid.innerHTML='<div class="zenTeaser"><div class="cii">\u262f</div>'
+    +'<div><b>ZEN EVENT \u00b7 COMING SOON</b><br>'
+    +'<span style="font-size:12px;color:var(--dim)">A peaceful mutation settles over the garden \u2014 zen plants harvest calmer and hit harder. Only the vault pass-code can wake it early.</span></div>'
+    +'<span class="zsComing">sleeps</span></div>';
+   return;
+  }
+  var ids=Object.keys(SAVE.plants||{});
+  if(!ids.length){grid.innerHTML='<div class="zenEmpty">No plants yet \u2014 win some stages and return to Zen-Mutate them.</div>';return}
+  ids.forEach(function(id){
+   var d=PLANTS[id];if(!d)return;
+   var zen=!!(SAVE.zen&&SAVE.zen[id]),cost=zenCost(d);
+   var card=document.createElement("div");card.className="zenCard"+(zen?" done":"");
+   card.innerHTML='<div class="zenIconSlot"></div><b>'+d.name+'</b>'
+    +'<span class="pillZen">'+(zen?"\u2713 AT PEACE":"\u262f "+cost+" S")+'</span>'
+    +'<div style="font-size:11px;color:#aee8a0">+22% stats \u00b7 calm</div>'
+    +'<button class="btn small" '+((zen||(SAVE.sheck||0)<cost)?"disabled":"")+' onclick="doZen(\''+id+'\')">'+(zen?"Zen\u2019d":"Zen-Mutate")+'</button>';
+   var slot=card.querySelector(".zenIconSlot");
+   if(slot)slot.appendChild(makeIcon(id,80));
+   grid.appendChild(card);
+  });
+ }
+ var _oe=openEnchant;
+ openEnchant=function(){var r=_oe?_oe():undefined;zenSection();return r};
+ var _re=renderEnchant;
+ renderEnchant=function(){var r=_re?_re():undefined;if(document.getElementById("zenGrid"))zenFill();return r};
+
+ /* ---------- 10. BADGES, RIBBON, PROFILE ---------- */
+ var _bsc=buildSideCards;
+ buildSideCards=function(){
+  _bsc();
+  var sc=document.getElementById("sideCards");if(!sc)return;
+  var cards=sc.querySelectorAll(".card");
+  for(var i=0;i<cards.length;i++){
+   var cd=cards[i],id=cd&&cd.dataset.id;
+   if(id&&SAVE.zen&&SAVE.zen[id]&&!cd.querySelector(".zenMark")){
+    var m=document.createElement("span");m.className="zenMark";m.textContent="\u2713";cd.appendChild(m);
+   }
+  }
+ };
+ function ribbon(){
+  var c=document.getElementById("evContent");if(!c||c.querySelector(".newsRib"))return;
+  var on=live();
+  var days=Math.max(0,Math.ceil((ZEN_DATE-new Date())/86400000));
+  var el=document.createElement("div");el.className="newsRib";
+  el.innerHTML='<span class="xi">\u262f</span><div><b>'+(on?"ZEN EVENT \u2014 LIVE \u2605":"ZEN EVENT \u2014 COMING OCT 1")+'</b><br><span style="font-size:12px;color:var(--dim)">'+(on?"Zen-Mutate any plant at the Enchanter for calm +22% power.":"A peaceful mutation sleeps in the garden until Oct 1 \u2014 zen plants harvest calmer and hit harder.")+'</span></div>'
+   +'<span class="cd">'+(on?"\u2605 LIVE":"\u23f3 "+days+"d left")+'</span>';
+  if(on){
+   var b=document.createElement("button");b.className="btn small gold zenGardenBtn";b.textContent="\u262f Zen Garden";
+   b.onclick=function(){openZen()};
+   el.appendChild(b);
+  }
+  c.insertBefore(el,c.firstChild);
+ }
+ function evCard(){
+  var strip=document.querySelector("#scr-events .upStrip");
+  if(!strip||strip.querySelector(".upCard.zen"))return;
+  var on=live();
+  var days=Math.max(0,Math.ceil((ZEN_DATE-new Date())/86400000));
+  var card=document.createElement("div");
+  card.className="upCard zen"+(on?" live":"");
+  card.innerHTML='<div class="upIco">\u262f</div><div class="upT"><b>ZEN EVENT</b><span class="upDate">'+(on?"Oct 1 \u2013 Nov 4 \u00b7 blooms now":"Oct 1 \u2013 Nov 4 \u00b7 unlocks soon")+'</span></div>'
+   +'<p>The garden settles into calm. Earn <b>Zen Petals</b> in battle, meditate for more, and awaken your plants to a deeper peace.</p>'
+   +'<div class="upFoot"><span class="upTag'+(on?" on":"")+'">'+(on?"\u25cf LIVE NOW":"in "+days+" day"+(days===1?"":"s"))+'</span><span class="upMore">lore \u00b7 mystery</span></div>';
+  strip.insertBefore(card,strip.firstChild);
+ }
+ function hubBanner(){
+  var h=document.getElementById("scr-hub");if(!h)return;
+  var on=live();
+  var spot=h.querySelector(".hubZenSpot");
+  if(!spot){
+   spot=document.createElement("div");spot.className="hubZenSpot";
+   var nav=h.querySelector(".navgrid");
+   if(nav)nav.parentNode.insertBefore(spot,nav);else h.appendChild(spot);
+  }
+  spot.className="hubZenSpot"+(on?" live":"");
+  var days=Math.max(0,Math.ceil((ZEN_DATE-new Date())/86400000));
+  spot.innerHTML=on
+   ?'<div class="zenTeaser live"><div class="ztI">\u262f</div><div><b>ZEN EVENT \u00b7 LIVE</b><br><span style="color:var(--dim)">The garden has settled into calm. Collect <b>Zen Petals</b> in battle and awaken your plants \u2014 visit the <b>Zen Garden</b>.</span></div><span class="ztC">OPEN</span></div>'
+   :'<div class="zenTeaser"><div class="ztI">\u262f</div><div><b>ZEN EVENT \u00b7 COMING SOON</b><br><span style="color:var(--dim)">In '+days+' day'+(days===1?"":"s")+' the garden settles into calm. Earn <b>Zen Petals</b> in battle and awaken plants to a deeper peace.</span></div><span class="ztC">OCT 1</span></div>';
+  if(on){
+   var b=document.createElement("button");b.className="btn small gold zenGardenBtn";b.style.marginLeft="6px";b.style.flex="0 0 auto";
+   b.textContent="\u262f Zen Garden";b.onclick=function(){openZen()};
+   spot.appendChild(b);
+  }
+ }
+ var _gh=goHub;
+ goHub=function(){var r=_gh?_gh():undefined;hubBanner();return r};
+ var _oev=openEvents;
+ openEvents=function(){var r=_oev?_oev():undefined;ribbon();evCard();return r};
+ var _rev=renderEvents;
+ renderEvents=function(){var r=_rev?_rev():undefined;ribbon();evCard();return r};
+ var _rq=renderQuests;
+ renderQuests=function(){var r=_rq?_rq():undefined;ribbon();return r};
+ var _rw=renderRewards;
+ renderRewards=function(){var r=_rw?_rw():undefined;ribbon();return r};
+ var _op=openProfile;
+ openProfile=function(){
+  var r=_op?_op():undefined;
+  var ps=document.getElementById("profStats");
+  if(!ps||ps.querySelector("[data-zenRow]"))return r;
+  ps.insertAdjacentHTML("beforeend","<span data-zenRow>Zen-mutated</span><span data-zenRow>"+peaceCount()+"</span>");
+  return r;
+ };
+ var _sh=show;
+ show=function(id){
+  if(typeof App!=="undefined"&&App.screen!==id)stopMeditation();
+  return _sh(id);
+ };
+
+ /* ---------- 11. PEACEFUL BOARD ---------- */
+ function boardZenCount(){
+  if(!G||!Array.isArray(G.plants))return 0;
+  var n=0,z=SAVE.zen||{};
+  for(var i=0;i<G.plants.length;i++){var id=G.plants[i]&&G.plants[i].id;if(id&&z[id])n++}
+  return n;
+ }
+ var _dr=draw;
+ draw=function(dtr){
+  _dr(dtr);
+  if(!themeOn()||!G||!G.bg)return;
+  var n=boardZenCount();
+  if(!n)return;
+  var a=Math.min(.42,.06+n*.05);
+  CX.save();
+  CX.globalCompositeOperation="lighter";
+  var g=CX.createRadialGradient(CV.width/2,CV.height/2,CV.height*.2,CV.width/2,CV.height/2,CV.height*.9);
+  g.addColorStop(0,"rgba(120,220,170,0)");
+  g.addColorStop(1,"rgba(120,220,170,"+a.toFixed(3)+")");
+  CX.fillStyle=g;CX.fillRect(0,0,CV.width,CV.height);
+  for(var i=0;i<10;i++){
+   var ph=(G.time*.055+i*.618)%1;
+   var px=(i*137+40)%CV.width,py=CV.height*(1-ph);
+   CX.globalAlpha=(1-ph)*.45;
+   CX.fillStyle="#eafff2";
+   CX.beginPath();CX.ellipse(px,py,4.2,2.7,ph*3,true,0,7);CX.fill();
+  }
+  CX.restore();
+ };
+
+ /* ---------- 12. TITLE PETALS ---------- */
  (function(){
   var d=document.getElementById("titleDeco");
   if(!d||d.querySelector(".oct5petal"))return;
@@ -4135,6 +4295,6 @@ return r;
    d.appendChild(sp);
   }
  })();
- window.GG_OCT5=true;
+ window.GG_ZEN=true;
 })();
 /**** End bundled feature set ****/
