@@ -2900,10 +2900,10 @@ function openEnchant(){
   d.innerHTML=`<div class="topbar"><button class="btn small ghost" onclick="closeModal()">&#8592; Home</button><b>🪄 Enchanter</b><span class="pill shard shardBal2">0</span></div>
   <div style="text-align:center;color:var(--dim);font-size:13px;margin:8px 0">Evolve a plant to reset its level but grant it a permanent, powerful evolution.</div>
   <div id="enGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:12px;max-width:900px;margin:auto"></div>`;
-  document.body.appendChild(d);
- }
- show("scr-enchant");
- renderEnchant();
+document.getElementById("app").appendChild(d);
+  }
+  show("scr-enchant");
+  renderEnchant();
 }
 function renderEnchant(){
  const grid=$("enGrid");if(!grid)return;
@@ -3188,7 +3188,7 @@ function doEvolve(id,cost){
    var el=document.getElementById("scr-enchant");
    if(!el){
     el=document.createElement("div");el.className="screen";el.id="scr-enchant";
-    document.body.appendChild(el);
+    (document.getElementById("app")||document.body).appendChild(el);
    }
    el.innerHTML=enchantScreenHtml();
    document.getElementById("enchBack").onclick=function(){if(typeof goHub==="function")goHub()};
@@ -3425,7 +3425,7 @@ function doEvolve(id,cost){
  openEnchant=function(){
   if(!sept26Unlocks()){if(typeof toast==="function")toast("The Enchanter awakens Sep 26!","err");return}
   var el=document.getElementById("scr-enchant");
-  if(!el){el=document.createElement("div");el.className="screen";el.id="scr-enchant";document.body.appendChild(el);}
+  if(!el){el=document.createElement("div");el.className="screen";el.id="scr-enchant";(document.getElementById("app")||document.body).appendChild(el);}
   el.innerHTML=enchantHtml();
   document.getElementById("enchBack").onclick=function(){if(typeof goHub==="function")goHub()};
   show("scr-enchant");refreshBals();renderEnchant();
@@ -4061,7 +4061,7 @@ var _rev=renderEvents;
  window.openZen=function(){
   if(!live()){toast("\u262f The Zen Garden opens when the event is live.","err");return}
   var el=document.getElementById("scr-zen");
-  if(!el){el=document.createElement("div");el.className="screen";el.id="scr-zen";document.body.appendChild(el)}
+  if(!el){el=document.createElement("div");el.className="screen";el.id="scr-zen";(document.getElementById("app")||document.body).appendChild(el)}
   el.innerHTML='<div class="topbar"><button class="btn small ghost" id="zenBack">\u2190 Home</button><b>\u262f Zen Garden</b><span class="pill zenPetalPill" id="zenPetalBal">\u273f 0</span></div>'
    +'<div class="zenPage"><div class="petalRain"></div>'
    +'<div class="zpHero"><span class="zsIco">\u262f</span><div><b>THE GARDEN IS AT PEACE</b><div style="font-size:13px;color:var(--dim)">Defeat foes in battle for a chance at a \u273f Zen Petal \u2014 then spend them here, or settle your plants at peace.</div></div><span class="zsLive">LIVE</span></div>'
